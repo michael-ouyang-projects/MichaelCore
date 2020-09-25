@@ -19,10 +19,32 @@ public class Httpd {
 
     private static void init(Path wwwDirectory, Path logDirectory) {
         try {
-            initWebData(wwwDirectory);
-            initLogData(logDirectory);
+            initWebData(wwwDirectory, new File(wwwDirectory.toString(), "index.html"));
+            initLogData(logDirectory, new File(logDirectory.toString(), "httpd.log"));
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void initWebData(Path wwwDirectory, File welcomePage) throws IOException {
+        if (needToCreateDirectory(wwwDirectory)) {
+            Files.createDirectories(wwwDirectory);
+        }
+        if (needToCreateFile(welcomePage)) {
+            try (FileWriter writer = new FileWriter(welcomePage)) {
+                writer.write("<html><body><h1>Web Server Implemented Using Java!</h1></body></html>");
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private static void initLogData(Path logDirectory, File logPage) throws IOException {
+        if (needToCreateDirectory(logDirectory)) {
+            Files.createDirectories(logDirectory);
+        }
+        if (needToCreateFile(logPage)) {
+            logPage.createNewFile();
         }
     }
 
@@ -37,34 +59,12 @@ public class Httpd {
         }
     }
 
-    private static void initWebData(Path wwwDirectory) throws IOException {
-        if (!(Files.exists(wwwDirectory) && Files.isDirectory(wwwDirectory))) {
-            Files.createDirectories(wwwDirectory);
-            createWelcomePage(new File(wwwDirectory.toString(), "index.html"));
-        }
+    private static boolean needToCreateDirectory(Path directory) {
+        return !(Files.exists(directory) && Files.isDirectory(directory));
     }
 
-    private static void createWelcomePage(File welcomePage) {
-        if (!(welcomePage.exists() && welcomePage.isFile())) {
-            try (FileWriter writer = new FileWriter(welcomePage)) {
-                writer.write("<html><body><h1>Web Server Implemented Using Java!</h1></body></html>");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private static void initLogData(Path logDirectory) throws IOException {
-        if (!(Files.exists(logDirectory) && Files.isDirectory(logDirectory))) {
-            Files.createDirectories(logDirectory);
-            createLogPage(new File(logDirectory.toString(), "httpd.log"));
-        }
-    }
-
-    private static void createLogPage(File logPage) throws IOException {
-        if (!(logPage.exists() && logPage.isFile())) {
-            logPage.createNewFile();
-        }
+    private static boolean needToCreateFile(File file) {
+        return !(file.exists() && file.isFile());
     }
 
 }
