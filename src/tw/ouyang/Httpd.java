@@ -13,20 +13,20 @@ import java.util.concurrent.Executors;
 public class Httpd {
 
     public static void main(String[] args) {
-        init(Paths.get("D:/var/www"), Paths.get("D:/var/log"));
+        createNecessaryFile(Paths.get("D:/var/www"), Paths.get("D:/var/log"));
         startHttpd(8080);
     }
 
-    private static void init(Path wwwDirectory, Path logDirectory) {
+    private static void createNecessaryFile(Path wwwDirectory, Path logDirectory) {
         try {
-            initWebData(wwwDirectory, new File(wwwDirectory.toString(), "index.html"));
-            initLogData(logDirectory, new File(logDirectory.toString(), "httpd.log"));
+            createWebDirectoryAndWelcomePage(wwwDirectory, new File(wwwDirectory.toString(), "index.html"));
+            createLogDirectoryAndLogPage(logDirectory, new File(logDirectory.toString(), "httpd.log"));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void initWebData(Path wwwDirectory, File welcomePage) throws IOException {
+    private static void createWebDirectoryAndWelcomePage(Path wwwDirectory, File welcomePage) throws IOException {
         if (needToCreateDirectory(wwwDirectory)) {
             Files.createDirectories(wwwDirectory);
         }
@@ -39,7 +39,7 @@ public class Httpd {
         }
     }
 
-    private static void initLogData(Path logDirectory, File logPage) throws IOException {
+    private static void createLogDirectoryAndLogPage(Path logDirectory, File logPage) throws IOException {
         if (needToCreateDirectory(logDirectory)) {
             Files.createDirectories(logDirectory);
         }

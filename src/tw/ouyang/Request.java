@@ -3,19 +3,19 @@ package tw.ouyang;
 public class Request {
 
     private String requestHeader;
-    private String requestPath;
+    private String requestResourcePath;
 
     public Request(String requestInfo) {
         this.requestHeader = requestInfo;
-        this.requestPath = requestInfo.split(" ")[1];
+        this.requestResourcePath = requestInfo.split(" ")[1];
     }
 
     public String getRequestHeader() {
         return requestHeader;
     }
 
-    public String getRequestPath() {
-        return requestPath;
+    public String getRequestResourcePath() {
+        return requestResourcePath;
     }
 
 }

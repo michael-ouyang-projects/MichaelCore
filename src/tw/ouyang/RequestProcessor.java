@@ -21,43 +21,56 @@ public class RequestProcessor implements Runnable {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 PrintWriter writer = new PrintWriter(socket.getOutputStream())) {
 
-            Request request = getRequestInfo(reader);
-            logRequestInfo(request);
-
-            String response = "HTTP/1.1 200 OK"
-                    + "Content-Length: %d"
-                    + "Content-Type: text/html\r\n\r\n%s";
-            StringBuffer webPageData = new StringBuffer();
-            try (BufferedReader filereader = new BufferedReader(new FileReader("D:/var/www/" + request.getRequestPath()))) {
-                String line = null;
-                while ((line = filereader.readLine()) != null) {
-                    webPageData.append(line);
-                }
-                writer.write(String.format(response, webPageData.length(), webPageData));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            Request request = getClientRequest(reader);
+            logRequest(request);
+            responseToClient(request, writer);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private Request getRequestInfo(BufferedReader reader) throws IOException {
+    private Request getClientRequest(BufferedReader reader) throws IOException {
         String line = null;
-        StringBuffer requestInfo = new StringBuffer();
+        StringBuffer requestHeader = new StringBuffer();
         while ((line = reader.readLine()).length() > 0) {
-            requestInfo.append(line + "\n");
+            requestHeader.append(line + "\n");
         }
-        return new Request(requestInfo.toString());
+        return new Request(requestHeader.toString());
     }
 
-    private void logRequestInfo(Request request) {
+    private void logRequest(Request request) {
         try (FileWriter writer = new FileWriter("D:/var/log/httpd.log", true)) {
             writer.write(request.getRequestHeader() + "\n");
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void responseToClient(Request request, PrintWriter writer) {
+        String response = createResponse(request);
+        writer.write(response);
+    }
+
+    private String createResponse(Request request) {
+        String response = "HTTP/1.1 200 OK"
+                + "Content-Length: %d"
+                + "Content-Type: text/html\r\n\r\n%s";
+        String requestResource = getRequestResource(request);
+        return String.format(response, requestResource.length(), requestResource);
+    }
+
+    private String getRequestResource(Request request) {
+        StringBuffer requestPage = new StringBuffer();
+        try (BufferedReader filereader = new BufferedReader(new FileReader("D:/var/www/" + request.getRequestResourcePath()))) {
+            String line = null;
+            while ((line = filereader.readLine()) != null) {
+                requestPage.append(line);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return requestPage.toString();
     }
 
 }
