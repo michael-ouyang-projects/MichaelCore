@@ -1,11 +1,12 @@
 package tw.ouyang;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import java.io.OutputStream;
 import java.net.Socket;
 
 public class RequestProcessor implements Runnable {
@@ -19,11 +20,15 @@ public class RequestProcessor implements Runnable {
     @Override
     public void run() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                PrintWriter writer = new PrintWriter(socket.getOutputStream())) {
+                BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream())) {
 
             Request request = getClientRequest(reader);
-            logRequest(request);
-            responseToClient(request, writer);
+            if (request.getRequestInfo() != null) {
+                logRequest(request);
+                responseToClient(request, outputStream);
+            } else {
+                System.err.println("ERROR");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -31,46 +36,54 @@ public class RequestProcessor implements Runnable {
     }
 
     private Request getClientRequest(BufferedReader reader) throws IOException {
-        String line = null;
-        StringBuffer requestHeader = new StringBuffer();
-        while ((line = reader.readLine()).length() > 0) {
-            requestHeader.append(line + "\n");
+        StringBuffer requestInfo = new StringBuffer();
+        String line = reader.readLine();
+        while (line != null && line.length() > 0) {
+            requestInfo.append(line + "\n");
+            line = reader.readLine();
         }
-        return new Request(requestHeader.toString());
+        return new Request(requestInfo.toString());
     }
 
     private void logRequest(Request request) {
         try (FileWriter writer = new FileWriter("D:/var/log/httpd.log", true)) {
-            writer.write(request.getRequestHeader() + "\n");
+            writer.write(request.getRequestInfo() + "\n");
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void responseToClient(Request request, PrintWriter writer) {
-        String response = createResponse(request);
-        writer.write(response);
+    private void responseToClient(Request request, OutputStream outputStream) throws IOException {
+        outputStream.write(createResponse(request).getBytes());
     }
 
     private String createResponse(Request request) {
-        String response = "HTTP/1.1 200 OK"
-                + "Content-Length: %d"
-                + "Content-Type: text/html\r\n\r\n%s";
-        String requestResource = getRequestResource(request);
-        return String.format(response, requestResource.length(), requestResource);
+        if (request.getRequestResourcePath().endsWith(".html")) {
+            String response = "HTTP/1.1 200 OK"
+                    + "Content-Length: %d"
+                    + "Content-Type: text/html\r\n\r\n%s";
+            String requestResource = getRequestResource(request);
+            return String.format(response, requestResource.length(), requestResource);
+        } else {
+            String response = "HTTP/1.1 200 OK"
+                    + "Content-Length: %d"
+                    + "Content-Type: image/x-icon\r\n\r\n%s";
+            String requestResource = getRequestResource(request);
+            return String.format(response, requestResource.length(), requestResource);
+        }
     }
 
     private String getRequestResource(Request request) {
-        StringBuffer requestPage = new StringBuffer();
-        try (BufferedReader filereader = new BufferedReader(new FileReader("D:/var/www/" + request.getRequestResourcePath()))) {
+        StringBuffer requestResource = new StringBuffer();
+        try (BufferedReader reader = new BufferedReader(new FileReader("D:/var/www/" + request.getRequestResourcePath()))) {
             String line = null;
-            while ((line = filereader.readLine()) != null) {
-                requestPage.append(line);
+            while ((line = reader.readLine()) != null) {
+                requestResource.append(line);
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return requestPage.toString();
+        return requestResource.toString();
     }
 
 }

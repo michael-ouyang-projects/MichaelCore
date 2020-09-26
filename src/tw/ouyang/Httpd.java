@@ -14,7 +14,7 @@ public class Httpd {
 
     public static void main(String[] args) {
         createNecessaryFile(Paths.get("D:/var/www"), Paths.get("D:/var/log"));
-        startHttpd(8080);
+        startHttpd(80);
     }
 
     private static void createNecessaryFile(Path wwwDirectory, Path logDirectory) {
@@ -32,7 +32,11 @@ public class Httpd {
         }
         if (needToCreateFile(welcomePage)) {
             try (FileWriter writer = new FileWriter(welcomePage)) {
-                writer.write("<html><body><h1>Web Server Implemented Using Java!</h1></body></html>");
+                writer.write("<html><body>"
+                        + "<link rel='icon' href='favicon.ico' type='image/icon type'>"
+                        + "<h1>Web Server Implemented Using Java!</h1>"
+                        + "<img src='favicon.ico'/>"
+                        + "</body></html>");
             } catch (Exception e) {
                 e.printStackTrace();
             }
