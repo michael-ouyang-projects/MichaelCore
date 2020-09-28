@@ -1,18 +1,29 @@
 package tw.ouyang;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 public class Request {
 
     private String requestInfo;
-    private String requestResourcePath;
+    private String resourcePath;
+    private String contentType;
 
-    public Request(String requestInfo) {
-        if(requestInfo.trim().length() > 0) {
+    public Request(String requestInfo) throws IOException {
+        if (requestInfo.trim().length() > 0) {
             this.requestInfo = requestInfo;
-            this.requestResourcePath = requestInfo.split(" ")[1];
-            if ("/".equals(requestResourcePath)) {
-                requestResourcePath = "/index.html";
+            this.resourcePath = requestInfo.split(" ")[1];
+            if ("/".equals(resourcePath)) {
+                resourcePath = "/index.html";
             }
-            System.out.println(requestResourcePath);
+            contentType = Files.probeContentType(Paths.get("D:/var/www/" + resourcePath));
+            if (contentType == null) {
+                if (resourcePath.endsWith(".js")) {
+                    contentType = "application/javascript";
+                }
+            }
+            System.out.println(resourcePath + ", " + contentType);
         }
     }
 
@@ -20,8 +31,12 @@ public class Request {
         return requestInfo;
     }
 
-    public String getRequestResourcePath() {
-        return requestResourcePath;
+    public String getResourcePath() {
+        return resourcePath;
+    }
+
+    public String getContentType() {
+        return contentType;
     }
 
 }

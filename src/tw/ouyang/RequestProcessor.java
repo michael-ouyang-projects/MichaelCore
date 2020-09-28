@@ -1,13 +1,16 @@
 package tw.ouyang;
 
-import java.io.BufferedOutputStream;
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 public class RequestProcessor implements Runnable {
 
@@ -20,8 +23,7 @@ public class RequestProcessor implements Runnable {
     @Override
     public void run() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                BufferedOutputStream outputStream = new BufferedOutputStream(socket.getOutputStream())) {
-
+                OutputStream outputStream = socket.getOutputStream()) {
             Request request = getClientRequest(reader);
             if (request.getRequestInfo() != null) {
                 logRequest(request);
@@ -29,7 +31,6 @@ public class RequestProcessor implements Runnable {
             } else {
                 System.err.println("ERROR");
             }
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -54,36 +55,31 @@ public class RequestProcessor implements Runnable {
     }
 
     private void responseToClient(Request request, OutputStream outputStream) throws IOException {
-        outputStream.write(createResponse(request).getBytes());
+        outputStream.write(createResponse(request));
     }
 
-    private String createResponse(Request request) {
-        if (request.getRequestResourcePath().endsWith(".html")) {
-            String response = "HTTP/1.1 200 OK"
-                    + "Content-Length: %d"
-                    + "Content-Type: text/html\r\n\r\n%s";
-            String requestResource = getRequestResource(request);
-            return String.format(response, requestResource.length(), requestResource);
-        } else {
-            String response = "HTTP/1.1 200 OK"
-                    + "Content-Length: %d"
-                    + "Content-Type: image/x-icon\r\n\r\n%s";
-            String requestResource = getRequestResource(request);
-            return String.format(response, requestResource.length(), requestResource);
-        }
+    private byte[] createResponse(Request request) {
+        String info = "HTTP/1.1 200 OK"
+                + "Content-Length: %d"
+                + "Content-Type: %s\r\n\r\n";
+        byte[] resource = getResource(request);
+        byte[] responseInfo = String.format(info, resource.length, request.getContentType()).getBytes();
+        int responseSize = responseInfo.length + resource.length;
+        return ByteBuffer.allocate(responseSize).put(responseInfo).put(resource).array();
     }
 
-    private String getRequestResource(Request request) {
-        StringBuffer requestResource = new StringBuffer();
-        try (BufferedReader reader = new BufferedReader(new FileReader("D:/var/www/" + request.getRequestResourcePath()))) {
-            String line = null;
-            while ((line = reader.readLine()) != null) {
-                requestResource.append(line);
+    private byte[] getResource(Request request) {
+        ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
+        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream("D:/var/www/" + request.getResourcePath()))) {
+            int step = 0;
+            byte[] dataBlock = new byte[1024];
+            while ((step = inputStream.read(dataBlock)) > 0) {
+                dataStream.write(Arrays.copyOf(dataBlock, step));
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return requestResource.toString();
+        return dataStream.toByteArray();
     }
 
 }
