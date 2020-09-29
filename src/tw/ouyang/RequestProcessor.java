@@ -23,7 +23,7 @@ public class RequestProcessor implements Runnable {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 OutputStream outputStream = socket.getOutputStream()) {
             Request request = getClientRequest(reader);
-            if (request.getRequestInfo() != null) {
+            if (request != null) {
                 logRequest(request);
                 responseToClient(request, outputStream);
             }
@@ -39,7 +39,7 @@ public class RequestProcessor implements Runnable {
             requestInfo.append(line + "\n");
             line = reader.readLine();
         }
-        return new Request(requestInfo.toString());
+        return requestInfo.toString().length() > 0 ? new Request(requestInfo.toString()) : null;
     }
 
     private void logRequest(Request request) {
@@ -51,17 +51,29 @@ public class RequestProcessor implements Runnable {
     }
 
     private void responseToClient(Request request, OutputStream outputStream) throws IOException {
-        outputStream.write(createResponse(request));
+        byte[] response = createResponse(request);
+        if (response != null) {
+            outputStream.write(response);
+        }
     }
 
-    private byte[] createResponse(Request request) throws IOException {
+    private byte[] createResponse(Request request) {
         byte[] resource = getResource(request);
-        byte[] info = getInfo(request, resource);
-        return concatenateInfoAndResource(info, resource);
+        if (resource != null) {
+            byte[] info = getInfo(request, resource);
+            return concatenateInfoAndResource(info, resource);
+        }
+        return null;
     }
 
-    private byte[] getResource(Request request) throws IOException {
-        return Files.readAllBytes(Paths.get("D:/var/www/", request.getResourcePath()));
+    private byte[] getResource(Request request) {
+        byte[] resource = null;
+        try {
+            resource = Files.readAllBytes(Paths.get("D:/var/www/", request.getResourcePath()));
+        } catch (IOException e) {
+            System.out.println("Wrong Path!");
+        }
+        return resource;
     }
 
     private byte[] getInfo(Request request, byte[] resource) {

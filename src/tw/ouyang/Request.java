@@ -11,12 +11,10 @@ public class Request {
     private String contentType;
 
     public Request(String requestInfo) throws IOException {
-        if (requestInfo.trim().length() > 0) {
-            this.requestInfo = requestInfo;
-            this.resourcePath = fetchResourcePath(requestInfo);
-            this.contentType = fetchContentType(resourcePath);
-            System.out.println(resourcePath + ", " + contentType);
-        }
+        this.requestInfo = requestInfo;
+        this.resourcePath = fetchResourcePath(requestInfo);
+        this.contentType = fetchContentType(resourcePath);
+        System.out.println(resourcePath + ", " + contentType);
     }
 
     private String fetchResourcePath(String requestInfo) {
