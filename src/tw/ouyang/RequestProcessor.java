@@ -1,16 +1,14 @@
 package tw.ouyang;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 public class RequestProcessor implements Runnable {
 
@@ -28,8 +26,6 @@ public class RequestProcessor implements Runnable {
             if (request.getRequestInfo() != null) {
                 logRequest(request);
                 responseToClient(request, outputStream);
-            } else {
-                System.err.println("ERROR");
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -58,28 +54,26 @@ public class RequestProcessor implements Runnable {
         outputStream.write(createResponse(request));
     }
 
-    private byte[] createResponse(Request request) {
-        String info = "HTTP/1.1 200 OK"
-                + "Content-Length: %d"
-                + "Content-Type: %s\r\n\r\n";
+    private byte[] createResponse(Request request) throws IOException {
         byte[] resource = getResource(request);
-        byte[] responseInfo = String.format(info, resource.length, request.getContentType()).getBytes();
-        int responseSize = responseInfo.length + resource.length;
-        return ByteBuffer.allocate(responseSize).put(responseInfo).put(resource).array();
+        byte[] info = getInfo(request, resource);
+        return concatenateInfoAndResource(info, resource);
     }
 
-    private byte[] getResource(Request request) {
-        ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
-        try (BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream("D:/var/www/" + request.getResourcePath()))) {
-            int step = 0;
-            byte[] dataBlock = new byte[1024];
-            while ((step = inputStream.read(dataBlock)) > 0) {
-                dataStream.write(Arrays.copyOf(dataBlock, step));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return dataStream.toByteArray();
+    private byte[] getResource(Request request) throws IOException {
+        return Files.readAllBytes(Paths.get("D:/var/www/", request.getResourcePath()));
+    }
+
+    private byte[] getInfo(Request request, byte[] resource) {
+        String infoFormat = "HTTP/1.1 200 OK"
+                + "Content-Length: %d"
+                + "Content-Type: %s\r\n\r\n";
+        return String.format(infoFormat, resource.length, request.getContentType()).getBytes();
+    }
+
+    private byte[] concatenateInfoAndResource(byte[] info, byte[] resource) {
+        int responseSize = info.length + resource.length;
+        return ByteBuffer.allocate(responseSize).put(info).put(resource).array();
     }
 
 }
