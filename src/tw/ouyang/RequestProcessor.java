@@ -5,10 +5,12 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Map;
 
 public class RequestProcessor implements Runnable {
 
@@ -66,12 +68,32 @@ public class RequestProcessor implements Runnable {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     private byte[] getResource(Request request) {
         byte[] resource = null;
         try {
-            resource = Files.readAllBytes(Paths.get("D:/var/www/", request.getResourcePath()));
-        } catch (IOException e) {
-            System.out.println("Wrong Path!");
+            if ("GET".equalsIgnoreCase(request.getRequestMethod())) {
+                Map<String, Method> getMapping = (Map<String, Method>) SingletonBeanFactory.getBean("getMapping");
+                Method method = getMapping.get(request.getRequestPath());
+                if (method != null) {
+                    System.out.println();
+                    Object returningObject = method.invoke(SingletonBeanFactory.getBean(method.getDeclaringClass().getSimpleName()));
+                    resource = ((String) returningObject).getBytes();
+                } else {
+                    resource = Files.readAllBytes(Paths.get("D:/var/www/", request.getRequestPath()));
+                }
+            } else if ("POST".equalsIgnoreCase(request.getRequestMethod())) {
+                Map<String, Method> postMapping = (Map<String, Method>) SingletonBeanFactory.getBean("postMapping");
+                Method method = postMapping.get(request.getRequestPath());
+                if (method != null) {
+                    Object returningObject = method.invoke(SingletonBeanFactory.getBean(method.getDeclaringClass().getSimpleName()));
+                    resource = ((String) returningObject).getBytes();
+                } else {
+                    throw new Exception();
+                }
+            }
+        } catch (Exception e) {
+            resource = new String("Error while getting resource!").getBytes();
         }
         return resource;
     }
