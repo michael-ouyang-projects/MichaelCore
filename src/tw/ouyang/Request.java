@@ -7,18 +7,25 @@ import java.nio.file.Paths;
 public class Request {
 
     private String requestInfo;
-    private String resourcePath;
+    private String requestMethod;
+    private String requestPath;
     private String contentType;
 
     public Request(String requestInfo) throws IOException {
         this.requestInfo = requestInfo;
-        this.resourcePath = fetchResourcePath(requestInfo);
-        this.contentType = fetchContentType(resourcePath);
-        System.out.println(resourcePath + ", " + contentType);
+        String[] requestInfoBlock = requestInfo.split(" ");
+        this.requestMethod = fetchRequestMethod(requestInfoBlock);
+        this.requestPath = fetchRequestPath(requestInfoBlock);
+        this.contentType = fetchContentType(requestPath);
+        System.out.println(String.format("%s, %s, %s", requestMethod, requestPath, contentType));
     }
 
-    private String fetchResourcePath(String requestInfo) {
-        String resourcePath = requestInfo.split(" ")[1];
+    private String fetchRequestMethod(String[] requestInfoBlock) {
+        return requestInfoBlock[0];
+    }
+
+    private String fetchRequestPath(String[] requestInfoBlock) {
+        String resourcePath = requestInfoBlock[1];
         return "/".equals(resourcePath) ? "/index.html" : resourcePath;
     }
 
@@ -27,6 +34,8 @@ public class Request {
         if (contentType == null) {
             if (resourcePath.endsWith(".js")) {
                 contentType = "application/javascript";
+            } else {
+                contentType = "text/plain";
             }
         }
         return contentType;
@@ -36,8 +45,12 @@ public class Request {
         return requestInfo;
     }
 
-    public String getResourcePath() {
-        return resourcePath;
+    public String getRequestMethod() {
+        return requestMethod;
+    }
+
+    public String getRequestPath() {
+        return requestPath;
     }
 
     public String getContentType() {
