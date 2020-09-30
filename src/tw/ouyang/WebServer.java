@@ -16,7 +16,6 @@ import java.util.concurrent.Executors;
 import tw.ouyang.annotation.Controller;
 import tw.ouyang.annotation.Get;
 import tw.ouyang.annotation.Post;
-import tw.ouyang.ctrl.HelloController;
 
 public class WebServer {
 
@@ -35,15 +34,41 @@ public class WebServer {
         Map<String, Method> getMapping = (Map<String, Method>) SingletonBeanFactory.addBean("getMapping", new HashMap<>());
         Map<String, Method> postMapping = (Map<String, Method>) SingletonBeanFactory.addBean("postMapping", new HashMap<>());
 
-        if (HelloController.class.isAnnotationPresent(Controller.class)) {
-            SingletonBeanFactory.addBean("HelloController", new HelloController());
-            for (Method method : HelloController.class.getMethods()) {
-                if (method.isAnnotationPresent(Get.class)) {
-                    getMapping.put(method.getAnnotation(Get.class).value(), method);
-                } else if (method.isAnnotationPresent(Post.class)) {
-                    postMapping.put(method.getAnnotation(Post.class).value(), method);
-                }
-            }
+        try {
+            String applicationPath = this.getClass().getResource("/").getPath().substring(1);
+            Files.walk(Paths.get(applicationPath))
+                    .filter(Files::isRegularFile)
+                    .filter(classFile -> {
+                        if (classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath).length == 2) {
+                            return classFile.getFileName().toString().endsWith(".class");
+                        } else {
+                            return false;
+                        }
+                    })
+                    .map(classFile -> {
+                        String packagePath = classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath)[1].replace("/", ".");
+                        String className = classFile.getFileName().toString().split("\\.")[0];
+                        return String.format("%s.%s", packagePath, className);
+                    })
+                    .forEach(fqcn -> {
+                        try {
+                            Class<?> loopClass = Class.forName(fqcn);
+                            if (loopClass.isAnnotationPresent(Controller.class)) {
+                                SingletonBeanFactory.addBean(loopClass.getSimpleName(), loopClass.newInstance());
+                                for (Method method : loopClass.getMethods()) {
+                                    if (method.isAnnotationPresent(Get.class)) {
+                                        getMapping.put(method.getAnnotation(Get.class).value(), method);
+                                    } else if (method.isAnnotationPresent(Post.class)) {
+                                        postMapping.put(method.getAnnotation(Post.class).value(), method);
+                                    }
+                                }
+                            }
+                        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                            e.printStackTrace();
+                        }
+                    });
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 

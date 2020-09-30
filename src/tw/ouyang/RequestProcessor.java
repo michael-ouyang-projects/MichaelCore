@@ -76,7 +76,8 @@ public class RequestProcessor implements Runnable {
                 Map<String, Method> getMapping = (Map<String, Method>) SingletonBeanFactory.getBean("getMapping");
                 Method method = getMapping.get(request.getRequestPath());
                 if (method != null) {
-                    Object returningObject = method.invoke(SingletonBeanFactory.getBean("HelloController"));
+                    System.out.println();
+                    Object returningObject = method.invoke(SingletonBeanFactory.getBean(method.getDeclaringClass().getSimpleName()));
                     resource = ((String) returningObject).getBytes();
                 } else {
                     resource = Files.readAllBytes(Paths.get("D:/var/www/", request.getRequestPath()));
@@ -85,7 +86,7 @@ public class RequestProcessor implements Runnable {
                 Map<String, Method> postMapping = (Map<String, Method>) SingletonBeanFactory.getBean("postMapping");
                 Method method = postMapping.get(request.getRequestPath());
                 if (method != null) {
-                    Object returningObject = method.invoke(SingletonBeanFactory.getBean("HelloController"));
+                    Object returningObject = method.invoke(SingletonBeanFactory.getBean(method.getDeclaringClass().getSimpleName()));
                     resource = ((String) returningObject).getBytes();
                 } else {
                     throw new Exception();
