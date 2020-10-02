@@ -3,21 +3,24 @@ package tw.ouyang;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Request {
 
-    private String requestInfo;
+    private String requestHeader;
     private String requestMethod;
     private String requestPath;
     private String contentType;
+    private Map<String, String> requestParameters;
 
-    public Request(String requestInfo) throws IOException {
-        this.requestInfo = requestInfo;
-        String[] requestInfoBlock = requestInfo.split(" ");
+    public Request(String requestHeader) throws IOException {
+        this.requestHeader = requestHeader;
+        String[] requestInfoBlock = requestHeader.split(" ");
         this.requestMethod = fetchRequestMethod(requestInfoBlock);
         this.requestPath = fetchRequestPath(requestInfoBlock);
         this.contentType = fetchContentType(requestPath);
-        System.out.println(String.format("%s, %s, %s", requestMethod, requestPath, contentType));
+        System.out.println(String.format("%s, %s, %s, %s", requestMethod, requestPath, requestParameters, contentType));
     }
 
     private String fetchRequestMethod(String[] requestInfoBlock) {
@@ -25,8 +28,20 @@ public class Request {
     }
 
     private String fetchRequestPath(String[] requestInfoBlock) {
-        String resourcePath = requestInfoBlock[1];
-        return "/".equals(resourcePath) ? "/index.html" : resourcePath;
+    	String resourcePath = requestInfoBlock[1];
+        if(resourcePath.contains("?")) {
+        	String[] resourcePathBlock = resourcePath.split("\\?");
+        	resourcePath = resourcePathBlock[0];
+        	String parametersString = resourcePathBlock[1].trim();
+        	if(parametersString.length() > 0) {
+        		requestParameters = new HashMap<>();
+        		for(String parameter : parametersString.split("&")) {
+        			String[] keyValue = parameter.split("=");
+        			requestParameters.put(keyValue[0], keyValue[1]);
+        		}
+        	}
+        }
+        return resourcePath;
     }
 
     private String fetchContentType(String resourcePath) throws IOException {
@@ -41,8 +56,8 @@ public class Request {
         return contentType;
     }
 
-    public String getRequestInfo() {
-        return requestInfo;
+    public String getRequestHeader() {
+        return requestHeader;
     }
 
     public String getRequestMethod() {
@@ -57,4 +72,8 @@ public class Request {
         return contentType;
     }
 
+	public Map<String, String> getRequestParameters() {
+		return requestParameters;
+	}
+    
 }
