@@ -1,2 +1,3 @@
-# Web-Server
-web server implemented using java
+# Java-Framework-Implemetation
+1. IoC
+2. MVC
