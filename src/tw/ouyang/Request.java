@@ -32,16 +32,21 @@ public class Request {
         if(resourcePath.contains("?")) {
         	String[] resourcePathBlock = resourcePath.split("\\?");
         	resourcePath = resourcePathBlock[0];
-        	String parametersString = resourcePathBlock[1].trim();
-        	if(parametersString.length() > 0) {
-        		requestParameters = new HashMap<>();
-        		for(String parameter : parametersString.split("&")) {
-        			String[] keyValue = parameter.split("=");
-        			requestParameters.put(keyValue[0], keyValue[1]);
-        		}
-        	}
+        	getRequestParameters(resourcePathBlock[1].trim());
+        } else if("POST".equalsIgnoreCase(requestMethod)) {
+        	getRequestParameters(requestHeader.substring(requestHeader.lastIndexOf("\n") + 1));
         }
         return resourcePath;
+    }
+    
+    private void getRequestParameters(String parametersString) {
+    	if(parametersString.length() > 0) {
+    		requestParameters = new HashMap<>();
+    		for(String parameter : parametersString.split("&")) {
+    			String[] keyValue = parameter.split("=");
+    			requestParameters.put(keyValue[0], keyValue[1]);
+    		}
+    	}
     }
 
     private String fetchContentType(String resourcePath) throws IOException {

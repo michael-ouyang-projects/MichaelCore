@@ -40,11 +40,21 @@ public class RequestProcessor implements Runnable {
     }
 
     private Request getClientRequest(BufferedReader reader) throws IOException {
-        StringBuffer requestInfo = new StringBuffer();
+        StringBuilder requestInfo = new StringBuilder();
         String line = reader.readLine();
-        while (line != null && line.length() > 0) {
-            requestInfo.append(line + "\n");
-            line = reader.readLine();
+        if (line.startsWith("GET")) {
+        	while (line != null && line.length() > 0) {
+                requestInfo.append(line + "\n");
+                line = reader.readLine();
+            }
+        } else if (line.startsWith("POST")) {
+        	while (line != null && line.length() > 0) {
+                requestInfo.append(line + "\n");
+                line = reader.readLine();
+            }
+        	while(reader.ready()) {
+        		requestInfo.append((char) reader.read());
+        	}
         }
         return requestInfo.toString().length() > 0 ? new Request(requestInfo.toString()) : null;
     }
@@ -90,8 +100,8 @@ public class RequestProcessor implements Runnable {
                 Map<String, Method> postMapping = (Map<String, Method>) SingletonBeanFactory.getBean("postMapping");
                 Method mappingMethod = postMapping.get(request.getRequestPath());
                 if (mappingMethod != null) {
-                    Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()));
-                    resource = ((String) returningObject).getBytes();
+                    Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()), request.getRequestParameters());
+                    resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
                 } else {
                     throw new Exception();
                 }
