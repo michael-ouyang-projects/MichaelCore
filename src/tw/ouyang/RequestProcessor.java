@@ -16,16 +16,16 @@ import java.util.Map;
 public class RequestProcessor implements Runnable {
 
     private Socket socket;
-    private String webRootPath;
+    private String webRoot;
     private File logFile;
-    
-    public RequestProcessor(Socket socket, String webRootPath, File logFile) {
-		this.socket = socket;
-		this.webRootPath = webRootPath;
-		this.logFile = logFile;
-	}
 
-	@Override
+    public RequestProcessor(Socket socket, String webRoot, File logFile) {
+        this.socket = socket;
+        this.webRoot = webRoot;
+        this.logFile = logFile;
+    }
+
+    @Override
     public void run() {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
                 OutputStream outputStream = socket.getOutputStream()) {
@@ -42,19 +42,21 @@ public class RequestProcessor implements Runnable {
     private Request getClientRequest(BufferedReader reader) throws IOException {
         StringBuilder requestInfo = new StringBuilder();
         String line = reader.readLine();
-        if (line.startsWith("GET")) {
-        	while (line != null && line.length() > 0) {
-                requestInfo.append(line + "\n");
-                line = reader.readLine();
+        if(line != null) {
+            if (line.startsWith("GET")) {
+                while (line != null && line.length() > 0) {
+                    requestInfo.append(line + "\n");
+                    line = reader.readLine();
+                }
+            } else if (line.startsWith("POST")) {
+                while (line != null && line.length() > 0) {
+                    requestInfo.append(line + "\n");
+                    line = reader.readLine();
+                }
+                while (reader.ready()) {
+                    requestInfo.append((char) reader.read());
+                }
             }
-        } else if (line.startsWith("POST")) {
-        	while (line != null && line.length() > 0) {
-                requestInfo.append(line + "\n");
-                line = reader.readLine();
-            }
-        	while(reader.ready()) {
-        		requestInfo.append((char) reader.read());
-        	}
         }
         return requestInfo.toString().length() > 0 ? new Request(requestInfo.toString()) : null;
     }
@@ -87,45 +89,35 @@ public class RequestProcessor implements Runnable {
     private byte[] getResource(Request request) {
         byte[] resource = null;
         try {
-            if ("GET".equalsIgnoreCase(request.getRequestMethod())) {
-                Map<String, Method> getMapping = (Map<String, Method>) SingletonBeanFactory.getBean("getMapping");
-                Method mappingMethod = getMapping.get(request.getRequestPath());
-                if (mappingMethod != null) {
-                    Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()), request.getRequestParameters());
-                    resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
-                } else {
-                    resource = Files.readAllBytes(Paths.get(webRootPath, request.getRequestPath()));
-                }
-            } else if ("POST".equalsIgnoreCase(request.getRequestMethod())) {
-                Map<String, Method> postMapping = (Map<String, Method>) SingletonBeanFactory.getBean("postMapping");
-                Method mappingMethod = postMapping.get(request.getRequestPath());
-                if (mappingMethod != null) {
-                    Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()), request.getRequestParameters());
-                    resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
-                } else {
-                    throw new Exception();
-                }
+            Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
+            Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
+            Method mappingMethod = mapping.get(request.getRequestPath());
+            if (mappingMethod != null) {
+                Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()), request.getRequestParameters());
+                resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
+            } else {
+                resource = Files.readAllBytes(Paths.get(webRoot, request.getRequestPath()));
             }
         } catch (Exception e) {
-        	e.printStackTrace();
+            e.printStackTrace();
             resource = new String("Error while getting resource!").getBytes();
         }
         return resource;
     }
-    
+
     private byte[] readAndProcessTemplate(String templateFileName, Map<String, String> model) throws IOException {
-    	StringBuilder template = new StringBuilder();
-    	Files.readAllLines(Paths.get(webRootPath, "templates", templateFileName)).forEach(line -> {
-    		if(line.contains("${")) {
-    			String[] variables = line.split("\\$\\{");
-    			for(int i=1; i<variables.length; i++) {
-    				String variable = variables[i].split("\\}")[0];
-    				line = line.replaceAll(String.format("\\$\\{%s\\}", variable), model.get(variable));
-    			}
-    		}
-    		template.append(line);
-    	});
-    	return template.toString().getBytes();
+        StringBuilder template = new StringBuilder();
+        Files.readAllLines(Paths.get(webRoot, "templates", templateFileName)).forEach(line -> {
+            if (line.contains("${")) {
+                String[] variables = line.split("\\$\\{");
+                for (int i = 1; i < variables.length; i++) {
+                    String variable = variables[i].split("\\}")[0];
+                    line = line.replaceAll(String.format("\\$\\{%s\\}", variable), model.get(variable));
+                }
+            }
+            template.append(line);
+        });
+        return template.toString().getBytes();
     }
 
     private byte[] getInfo(Request request, byte[] resource) {

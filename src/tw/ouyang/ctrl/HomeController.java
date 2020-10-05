@@ -9,19 +9,19 @@ import tw.ouyang.annotation.Post;
 @Controller
 public class HomeController {
 
-	@Get("/")
+    @Get("/")
     public String home(Map<String, String> requestParameters) {
         return "index.html";
     }
-	
+
     @Get("/hello")
     public String sayHelloToSomeoneByGet(Map<String, String> requestParameters) {
-    	return "welcome.html";
+        return "welcome.html";
     }
-    
+
     @Post("/hello")
     public String sayHelloToSomeoneByPost(Map<String, String> requestParameters) {
-    	return "welcome.html";
+        return "welcome.html";
     }
 
 }
