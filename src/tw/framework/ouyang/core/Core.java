@@ -17,10 +17,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import tw.framework.ouyang.aop.annotation.Aspect;
 import tw.framework.ouyang.core.annotation.Configuration;
 import tw.framework.ouyang.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.ouyang.ioc.SingletonBeanFactory;
+import tw.framework.ouyang.ioc.annotation.Autowired;
 import tw.framework.ouyang.ioc.annotation.Bean;
+import tw.framework.ouyang.ioc.annotation.Service;
 import tw.framework.ouyang.ioc.annotation.Value;
 import tw.framework.ouyang.mvc.RequestProcessor;
 import tw.framework.ouyang.mvc.annotation.Controller;
@@ -110,7 +113,7 @@ public class Core {
                             }
                         }
                     }
-                    if (clazz.isAnnotationPresent(Controller.class)) {
+                    if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
                         if (!SingletonBeanFactory.containsBean(clazz.getName())) {
                             SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
                         }
@@ -120,12 +123,30 @@ public class Core {
                 }
             });
 
-            // Value
+            // Autowired
+            fqcnList.forEach(fqcn -> {
+                try {
+                    Class<?> clazz = Class.forName(fqcn);
+                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
+                        Object instance = SingletonBeanFactory.getBean(clazz.getName());
+                        for (Field field : clazz.getFields()) {
+                            if (field.isAnnotationPresent(Autowired.class)) {
+                                Object dependencyInstance = SingletonBeanFactory.getBean(field.getType().getName());
+                                field.set(instance, dependencyInstance);
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException | IllegalArgumentException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            // application.properties to @Value
             fqcnList.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     Object instance = SingletonBeanFactory.getBean(clazz.getName());
-                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class)) {
+                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Value.class)) {
                                 field.set(instance, propertiesMap.get(field.getName()));
@@ -133,6 +154,25 @@ public class Core {
                         }
                     }
                 } catch (ClassNotFoundException | IllegalArgumentException | IllegalAccessException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            // Request Mapping
+            fqcnList.forEach(fqcn -> {
+                try {
+                    Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
+                    Class<?> loopClass = Class.forName(fqcn);
+                    if (loopClass.isAnnotationPresent(Controller.class)) {
+                        for (Method method : loopClass.getMethods()) {
+                            if (method.isAnnotationPresent(Get.class)) {
+                                requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
+                            } else if (method.isAnnotationPresent(Post.class)) {
+                                requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             });
@@ -149,25 +189,6 @@ public class Core {
                         }
                     }
                 } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                    e.printStackTrace();
-                }
-            });
-
-            // MVC
-            fqcnList.forEach(fqcn -> {
-                try {
-                    Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
-                    Class<?> loopClass = Class.forName(fqcn);
-                    if (loopClass.isAnnotationPresent(Controller.class)) {
-                        for (Method method : loopClass.getMethods()) {
-                            if (method.isAnnotationPresent(Get.class)) {
-                                requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
-                            } else if (method.isAnnotationPresent(Post.class)) {
-                                requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
-                            }
-                        }
-                    }
-                } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }
             });
