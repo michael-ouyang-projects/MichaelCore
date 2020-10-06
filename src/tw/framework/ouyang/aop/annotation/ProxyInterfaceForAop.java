@@ -1,17 +1,15 @@
 package tw.framework.ouyang.aop.annotation;
 
-import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-import java.lang.annotation.Annotation;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
-@Target({TYPE, METHOD })
-public @interface Around {
+@Target(TYPE)
+public @interface ProxyInterfaceForAop {
 
-    public Class<? extends Annotation> value();
+    public Class<?> value();
 
 }

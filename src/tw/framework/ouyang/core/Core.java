@@ -25,7 +25,6 @@ import tw.framework.ouyang.ioc.annotation.Autowired;
 import tw.framework.ouyang.ioc.annotation.Bean;
 import tw.framework.ouyang.ioc.annotation.Service;
 import tw.framework.ouyang.ioc.annotation.Value;
-import tw.framework.ouyang.mvc.RequestProcessor;
 import tw.framework.ouyang.mvc.annotation.Controller;
 import tw.framework.ouyang.mvc.annotation.Get;
 import tw.framework.ouyang.mvc.annotation.Post;
@@ -67,7 +66,7 @@ public class Core {
                     propertiesMap.put(keyValue[0], keyValue[1]);
                 }
             }
-            SingletonBeanFactory.addBean("ouyang.application.properties", propertiesMap);
+            SingletonBeanFactory.addBean("michaelcore.application.properties", propertiesMap);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -80,7 +79,7 @@ public class Core {
     @SuppressWarnings("unchecked")
     private static void initializeContainer() {
         try {
-            Map<String, String> propertiesMap = (Map<String, String>) SingletonBeanFactory.getBean("ouyang.application.properties");
+            Map<String, String> propertiesMap = (Map<String, String>) SingletonBeanFactory.getBean("michaelcore.application.properties");
             String applicationPath;
             if (Boolean.parseBoolean(propertiesMap.get("isWindowsSystem"))) {
                 applicationPath = Core.class.getResource("/").getPath().substring(1);

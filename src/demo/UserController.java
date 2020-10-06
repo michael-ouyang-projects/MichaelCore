@@ -2,22 +2,27 @@ package demo;
 
 import java.util.Map;
 
+import tw.framework.ouyang.aop.annotation.ProxyInterfaceForAop;
 import tw.framework.ouyang.ioc.annotation.Autowired;
 import tw.framework.ouyang.mvc.annotation.Controller;
 import tw.framework.ouyang.mvc.annotation.Get;
 import tw.framework.ouyang.mvc.annotation.Post;
 
 @Controller
-public class UserController {
+@ProxyInterfaceForAop(IUserController.class)
+@ErrorPageHandlingAop
+public class UserController implements IUserController {
 
     @Autowired
     public UserService homeService;
 
+    @Override
     @Get("/")
     public String home(Map<String, String> requestParameters) {
         return "index.html";
     }
 
+    @Override
     @Get("/add")
     public String addUserByGet(Map<String, String> requestParameters) {
         String name = requestParameters.get("name");
@@ -26,6 +31,7 @@ public class UserController {
         return "success.html";
     }
 
+    @Override
     @Post("/add")
     public String addUserByPost(Map<String, String> requestParameters) {
         String name = requestParameters.get("name");

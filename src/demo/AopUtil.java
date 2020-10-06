@@ -1,30 +1,14 @@
 package demo;
 
 import tw.framework.ouyang.aop.annotation.Aspect;
-import tw.framework.ouyang.aop.annotation.Pointcut;
+import tw.framework.ouyang.aop.annotation.Before;
 
 @Aspect
 public class AopUtil {
 
-    @Pointcut("within(com.ouyang.mvc.controller.*) && @within(org.springframework.stereotype.Controller)")
-    public void controllerLayer() {
+    @Before(ErrorPageHandlingAop.class)
+    public void errorPageHandling() {
+        System.out.println("Catch by AOP!");
     }
-
-    @Pointcut("execution(public String *(..))")
-    public void publicMethod() {
-    }
-
-    @Pointcut("controllerLayer() && publicMethod()")
-    public void controllerPublicMethod() {
-    }
-
-    // @Around("controllerPublicMethod()")
-    // public String processRequest(ProceedingJoinPoint joinPoint) {
-    // try {
-    // return (String) joinPoint.proceed();
-    // } catch (Throwable e) {
-    // return "error.html";
-    // }
-    // }
 
 }

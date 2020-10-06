@@ -8,7 +8,7 @@ public class UserService {
 
     @Transactional
     public void addUser(User user) {
-        System.out.println(String.format("add new user to db => name: %s, age: %d", user.getName(), user.getAge()));
+        System.out.println(String.format("Add new user to db => name: %s, age: %d", user.getName(), user.getAge()));
     }
 
 }
