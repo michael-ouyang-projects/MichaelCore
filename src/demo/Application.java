@@ -1,6 +1,6 @@
 package demo;
 
-import tw.framework.ouyang.core.Core;
+import tw.framework.michaelcore.core.Core;
 
 public class Application {
 

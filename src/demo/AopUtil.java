@@ -1,7 +1,7 @@
 package demo;
 
-import tw.framework.ouyang.aop.annotation.Aspect;
-import tw.framework.ouyang.aop.annotation.Before;
+import tw.framework.michaelcore.aop.annotation.Aspect;
+import tw.framework.michaelcore.aop.annotation.Before;
 
 @Aspect
 public class AopUtil {

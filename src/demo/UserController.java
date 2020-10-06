@@ -2,11 +2,11 @@ package demo;
 
 import java.util.Map;
 
-import tw.framework.ouyang.aop.annotation.ProxyInterfaceForAop;
-import tw.framework.ouyang.ioc.annotation.Autowired;
-import tw.framework.ouyang.mvc.annotation.Controller;
-import tw.framework.ouyang.mvc.annotation.Get;
-import tw.framework.ouyang.mvc.annotation.Post;
+import tw.framework.michaelcore.aop.annotation.ProxyInterfaceForAop;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.mvc.annotation.Controller;
+import tw.framework.michaelcore.mvc.annotation.Get;
+import tw.framework.michaelcore.mvc.annotation.Post;
 
 @Controller
 @ProxyInterfaceForAop(IUserController.class)

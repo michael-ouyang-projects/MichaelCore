@@ -1,7 +1,7 @@
 package demo;
 
-import tw.framework.ouyang.data.annotation.Transactional;
-import tw.framework.ouyang.ioc.annotation.Service;
+import tw.framework.michaelcore.data.annotation.Transactional;
+import tw.framework.michaelcore.ioc.annotation.Service;
 
 @Service
 public class UserService {
