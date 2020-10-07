@@ -1,4 +1,4 @@
-package demo;
+package demo.aop;
 
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHandler;

@@ -1,7 +1,8 @@
-package demo;
+package demo.user;
 
 import java.util.Map;
 
+import demo.aop.SayHelloAop;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.InterfaceForAop;
 import tw.framework.michaelcore.ioc.annotation.Autowired;

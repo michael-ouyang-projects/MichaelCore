@@ -1,4 +1,4 @@
-package demo;
+package demo.user;
 
 public class User {
 

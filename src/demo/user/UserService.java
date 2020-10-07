@@ -1,4 +1,4 @@
-package demo;
+package demo.user;
 
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.annotation.Service;

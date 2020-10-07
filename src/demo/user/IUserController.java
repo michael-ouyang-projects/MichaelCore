@@ -1,4 +1,4 @@
-package demo;
+package demo.user;
 
 import java.util.Map;
 
