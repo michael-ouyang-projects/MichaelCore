@@ -12,6 +12,12 @@ public class SingletonBeanFactory {
         return getBean(name);
     }
 
+    public static Object addAopProxyBean(String name, Object object) {
+        Object realBean = beanFactory.put(name, object);
+        beanFactory.put(name + ".real", realBean);
+        return getBean(name);
+    }
+
     public static Object getBean(String name) {
         return beanFactory.get(name);
     }

@@ -4,8 +4,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,7 +19,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import tw.framework.michaelcore.aop.annotation.Aspect;
+import tw.framework.michaelcore.aop.annotation.AopHandler;
+import tw.framework.michaelcore.aop.annotation.AopHere;
+import tw.framework.michaelcore.aop.annotation.InterfaceForAop;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.ioc.SingletonBeanFactory;
@@ -112,7 +116,12 @@ public class Core {
                             }
                         }
                     }
-                    if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
+                    if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)) {
+                        if (!SingletonBeanFactory.containsBean(clazz.getName())) {
+                            SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
+                        }
+                    }
+                    if (clazz.isAnnotationPresent(AopHandler.class)) {
                         if (!SingletonBeanFactory.containsBean(clazz.getName())) {
                             SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
                         }
@@ -126,7 +135,8 @@ public class Core {
             fqcnList.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
-                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
+                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
+                            || clazz.isAnnotationPresent(AopHandler.class)) {
                         Object instance = SingletonBeanFactory.getBean(clazz.getName());
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Autowired.class)) {
@@ -145,7 +155,8 @@ public class Core {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     Object instance = SingletonBeanFactory.getBean(clazz.getName());
-                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(Aspect.class)) {
+                    if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
+                            || clazz.isAnnotationPresent(AopHandler.class)) {
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Value.class)) {
                                 field.set(instance, propertiesMap.get(field.getName()));
@@ -161,9 +172,9 @@ public class Core {
             fqcnList.forEach(fqcn -> {
                 try {
                     Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
-                    Class<?> loopClass = Class.forName(fqcn);
-                    if (loopClass.isAnnotationPresent(Controller.class)) {
-                        for (Method method : loopClass.getMethods()) {
+                    Class<?> clazz = Class.forName(fqcn);
+                    if (clazz.isAnnotationPresent(Controller.class)) {
+                        for (Method method : clazz.getMethods()) {
                             if (method.isAnnotationPresent(Get.class)) {
                                 requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
                             } else if (method.isAnnotationPresent(Post.class)) {
@@ -175,6 +186,30 @@ public class Core {
                     e.printStackTrace();
                 }
             });
+
+            // AOP
+            for(String fqcn : fqcnList) {
+                try {
+                    Class<?> clazz = Class.forName(fqcn);
+                    if (clazz.isAnnotationPresent(InterfaceForAop.class)) {
+                        Class<?> aopIterface = clazz.getAnnotation(InterfaceForAop.class).value();
+                        if (clazz.isAnnotationPresent(AopHere.class)) {
+                            InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
+                            SingletonBeanFactory.addAopProxyBean(clazz.getName(), Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler));
+                            continue;
+                        }
+                        for (Method method : clazz.getMethods()) {
+                            if (method.isAnnotationPresent(AopHere.class)) {
+                                InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
+                                SingletonBeanFactory.addAopProxyBean(clazz.getName(), Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler));
+                                continue;
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
 
             // ExecuteAfterContainerStartup
             fqcnList.forEach(fqcn -> {

@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -44,7 +45,7 @@ public class RequestProcessor implements Runnable {
     private Request getClientRequest(BufferedReader reader) throws IOException {
         StringBuilder requestInfo = new StringBuilder();
         String line = reader.readLine();
-        if(line != null) {
+        if (line != null) {
             if (line.startsWith("GET")) {
                 while (line != null && line.length() > 0) {
                     requestInfo.append(line + "\n");
@@ -95,12 +96,18 @@ public class RequestProcessor implements Runnable {
             Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
             Method mappingMethod = mapping.get(request.getRequestPath());
             if (mappingMethod != null) {
-                Object returningObject = mappingMethod.invoke(SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName()), request.getRequestParameters());
+                Object returningObject = null;
+                Object clazz = SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName());
+                if (Proxy.isProxyClass(clazz.getClass())) {
+                    returningObject = Proxy.getInvocationHandler(clazz).invoke(clazz, mappingMethod, new Object[] {request.getRequestParameters() });
+                } else {
+                    returningObject = mappingMethod.invoke(clazz, request.getRequestParameters());
+                }
                 resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
             } else {
                 resource = Files.readAllBytes(Paths.get(webRoot, request.getRequestPath()));
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             e.printStackTrace();
             resource = new String("Error while getting resource!").getBytes();
         }

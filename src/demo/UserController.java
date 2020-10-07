@@ -2,15 +2,16 @@ package demo;
 
 import java.util.Map;
 
-import tw.framework.michaelcore.aop.annotation.ProxyInterfaceForAop;
+import tw.framework.michaelcore.aop.annotation.AopHere;
+import tw.framework.michaelcore.aop.annotation.InterfaceForAop;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
 
 @Controller
-@ProxyInterfaceForAop(IUserController.class)
-@ErrorPageHandlingAop
+@InterfaceForAop(IUserController.class)
+@AopHere(SayHelloAop.class)
 public class UserController implements IUserController {
 
     @Autowired
