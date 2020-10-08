@@ -1,12 +1,18 @@
 package demo.user;
 
+import demo.aop.SayHelloAop;
+import tw.framework.michaelcore.aop.annotation.AopHere;
+import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.annotation.Service;
 
 @Service
-public class UserService {
+@AopInterface(IUserService.class)
+public class UserService implements IUserService {
 
+    @Override
     @Transactional
+    @AopHere(SayHelloAop.class)
     public void addUser(User user) {
         System.out.println(String.format("Add new user to db => name: %s, age: %d", user.getName(), user.getAge()));
     }

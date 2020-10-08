@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.aop.annotation.InterfaceForAop;
+import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.ioc.SingletonBeanFactory;
@@ -116,14 +116,12 @@ public class Core {
                             }
                         }
                     }
-                    if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)) {
+                    if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(AopHandler.class)) {
                         if (!SingletonBeanFactory.containsBean(clazz.getName())) {
-                            SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
-                        }
-                    }
-                    if (clazz.isAnnotationPresent(AopHandler.class)) {
-                        if (!SingletonBeanFactory.containsBean(clazz.getName())) {
-                            SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
+                            Object instance = SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
+                            for(Class<?> implementedInterface : clazz.getInterfaces()) {
+                                SingletonBeanFactory.addBean(implementedInterface.getName(), instance);
+                            }
                         }
                     }
                 } catch (ClassNotFoundException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | InstantiationException e) {
@@ -131,13 +129,48 @@ public class Core {
                 }
             });
 
-            // Autowired
+            // AOP
+            for (String fqcn : fqcnList) {
+                try {
+                    Class<?> clazz = Class.forName(fqcn);
+                    if (clazz.isAnnotationPresent(AopInterface.class)) {
+                        Class<?> aopIterface = clazz.getAnnotation(AopInterface.class).value();
+                        if (clazz.isAnnotationPresent(AopHere.class)) {
+                            InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
+                            Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
+                            SingletonBeanFactory.addAopProxyBean(clazz.getName(), proxy);
+                            for(Class<?> implementedInterface : clazz.getInterfaces()) {
+                                SingletonBeanFactory.addAopProxyBean(implementedInterface.getName(), proxy);
+                            }
+                            continue;
+                        }
+                        for (Method method : clazz.getMethods()) {
+                            if (method.isAnnotationPresent(AopHere.class)) {
+                                InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(method.getAnnotation(AopHere.class).value().getName());
+                                Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
+                                SingletonBeanFactory.addAopProxyBean(clazz.getName(), proxy);
+                                for(Class<?> implementedInterface : clazz.getInterfaces()) {
+                                    SingletonBeanFactory.addAopProxyBean(implementedInterface.getName(), proxy);
+                                }
+                                continue;
+                            }
+                        }
+                    }
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // @Autowired
             fqcnList.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
                             || clazz.isAnnotationPresent(AopHandler.class)) {
                         Object instance = SingletonBeanFactory.getBean(clazz.getName());
+                        if (Proxy.isProxyClass(instance.getClass())) {
+                            instance = SingletonBeanFactory.getBean(clazz.getName() + ".real");
+                        }
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Autowired.class)) {
                                 Object dependencyInstance = SingletonBeanFactory.getBean(field.getType().getName());
@@ -154,9 +187,12 @@ public class Core {
             fqcnList.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
-                    Object instance = SingletonBeanFactory.getBean(clazz.getName());
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
                             || clazz.isAnnotationPresent(AopHandler.class)) {
+                        Object instance = SingletonBeanFactory.getBean(clazz.getName());
+                        if (Proxy.isProxyClass(instance.getClass())) {
+                            instance = SingletonBeanFactory.getBean(clazz.getName() + ".real");
+                        }
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Value.class)) {
                                 field.set(instance, propertiesMap.get(field.getName()));
@@ -186,30 +222,6 @@ public class Core {
                     e.printStackTrace();
                 }
             });
-
-            // AOP
-            for(String fqcn : fqcnList) {
-                try {
-                    Class<?> clazz = Class.forName(fqcn);
-                    if (clazz.isAnnotationPresent(InterfaceForAop.class)) {
-                        Class<?> aopIterface = clazz.getAnnotation(InterfaceForAop.class).value();
-                        if (clazz.isAnnotationPresent(AopHere.class)) {
-                            InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
-                            SingletonBeanFactory.addAopProxyBean(clazz.getName(), Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler));
-                            continue;
-                        }
-                        for (Method method : clazz.getMethods()) {
-                            if (method.isAnnotationPresent(AopHere.class)) {
-                                InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
-                                SingletonBeanFactory.addAopProxyBean(clazz.getName(), Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler));
-                                continue;
-                            }
-                        }
-                    }
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-            }
 
             // ExecuteAfterContainerStartup
             fqcnList.forEach(fqcn -> {

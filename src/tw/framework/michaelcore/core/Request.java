@@ -20,7 +20,7 @@ public class Request {
         this.requestMethod = fetchRequestMethod(requestInfoBlock);
         this.requestPath = fetchRequestPath(requestInfoBlock);
         this.contentType = fetchContentType(requestPath);
-        System.out.println(String.format("%s, %s, %s, %s", requestMethod, requestPath, requestParameters, contentType));
+//        System.out.println(String.format("%s, %s, %s, %s", requestMethod, requestPath, requestParameters, contentType));
     }
 
     private String fetchRequestMethod(String[] requestInfoBlock) {
