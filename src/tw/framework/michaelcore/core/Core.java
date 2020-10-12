@@ -1,22 +1,16 @@
 package tw.framework.michaelcore.core;
 
-import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import tw.framework.michaelcore.aop.annotation.AopHandler;
@@ -29,6 +23,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Service;
 import tw.framework.michaelcore.ioc.annotation.Value;
+import tw.framework.michaelcore.mvc.MvcCore;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
@@ -36,69 +31,37 @@ import tw.framework.michaelcore.mvc.annotation.Post;
 @Configuration
 public class Core {
 
-    @Value
-    public String listeningPort;
+    private static final String applicationPath;
 
-    @Value
-    public String welcomePage;
-
-    @Value
-    public String loggingPage;
+    static {
+        readProperties();
+        applicationPath = getApplicationPath();
+    }
 
     public static void start() {
-        readApplicationProperties();
         initializeContainer();
-        CoreContext.getBean(Core.class.getName(), Core.class).startServer();
+        CoreContext.getBean(MvcCore.class.getName(), MvcCore.class).startServer();
     }
 
-    private static void readApplicationProperties() {
+    private static void readProperties() {
         try {
             List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
-            Map<String, String> propertyMapping = processProperties(properties);
-            CoreContext.addBean("michaelcore.properties", propertyMapping);
-        } catch (IOException e) {
-            System.err.println("Error while reading application.properties.");
-        }
-    }
-
-    private static Map<String, String> processProperties(List<String> properties) {
-        Map<String, String> propertyMapping = null;
-        if (properties.size() > 0) {
-            propertyMapping = new HashMap<>();
-            for (String property : properties) {
+            properties.forEach(property -> {
                 String[] keyValue = property.split("=");
-                propertyMapping.put(keyValue[0], keyValue[1]);
-            }
+                CoreContext.addProperties(keyValue[0], keyValue[1]);
+            });
+        } catch (IOException e) {
+            System.err.println("Error while reading application.properties!");
         }
-        return propertyMapping;
     }
 
     @SuppressWarnings("unchecked")
     private static void initializeContainer() {
         try {
-            Map<String, String> propertiesMap = CoreContext.getBean("michaelcore.properties", Map.class);
-            String applicationPath;
-            if (Boolean.parseBoolean(propertiesMap.get("isWindowsSystem"))) {
-                applicationPath = Core.class.getResource("/").getPath().substring(1);
-            } else {
-                applicationPath = Core.class.getResource("/").getPath();
-            }
-            List<String> fqcnList = Files.walk(Paths.get(applicationPath))
-                    .filter(Files::isRegularFile)
-                    .filter(classFile -> {
-                        if (classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath).length == 2) {
-                            return classFile.getFileName().toString().endsWith(".class");
-                        } else {
-                            return false;
-                        }
-                    }).map(classFile -> {
-                        String packagePath = classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath)[1].replace("/", ".");
-                        String className = classFile.getFileName().toString().split("\\.")[0];
-                        return String.format("%s.%s", packagePath, className);
-                    }).collect(Collectors.toList());
+            List<String> fqcns = getFqcns();
 
             // IoC
-            fqcnList.forEach(fqcn -> {
+            fqcns.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class)) {
@@ -123,7 +86,7 @@ public class Core {
             });
 
             // AOP
-            for (String fqcn : fqcnList) {
+            for (String fqcn : fqcns) {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(AopInterface.class)) {
@@ -155,7 +118,7 @@ public class Core {
             }
 
             // @Autowired
-            fqcnList.forEach(fqcn -> {
+            fqcns.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
@@ -177,7 +140,7 @@ public class Core {
             });
 
             // application.properties to @Value
-            fqcnList.forEach(fqcn -> {
+            fqcns.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
@@ -188,7 +151,7 @@ public class Core {
                         }
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Value.class)) {
-                                field.set(instance, propertiesMap.get(field.getName()));
+                                field.set(instance, CoreContext.getProperties(field.getName()));
                             }
                         }
                     }
@@ -198,7 +161,7 @@ public class Core {
             });
 
             // Request Mapping
-            fqcnList.forEach(fqcn -> {
+            fqcns.forEach(fqcn -> {
                 try {
                     Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) CoreContext.getBean("requestMapping");
                     Class<?> clazz = Class.forName(fqcn);
@@ -217,7 +180,7 @@ public class Core {
             });
 
             // ExecuteAfterContainerStartup
-            fqcnList.forEach(fqcn -> {
+            fqcns.forEach(fqcn -> {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class)) {
@@ -236,67 +199,34 @@ public class Core {
         }
     }
 
-    private void startServer() {
-        ExecutorService executor = Executors.newCachedThreadPool();
-        try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(listeningPort))) {
-            while (true) {
-                executor.submit(new RequestProcessor(serverSocket.accept(), new File(loggingPage)));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private static String getApplicationPath() {
+        String applicationPath = Core.class.getResource("/").getPath();
+        boolean isWindowsSystem = Boolean.parseBoolean(CoreContext.getProperties("isWindowsSystem"));
+        return isWindowsSystem ? applicationPath.substring(1) : applicationPath;
     }
 
-    @ExecuteAfterContainerStartup
-    public void startup() {
-        try {
-            createNecessaryDirectories();
-            createNecessaryFiles();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    private static List<String> getFqcns() throws IOException {
+        return Files.walk(Paths.get(applicationPath))
+                .filter(Files::isRegularFile)
+                .filter(file -> {
+                    return notInDefaultPackage(file) && isClassFile(file);
+                }).map(classFile -> {
+                    return toFqcn(classFile);
+                }).collect(Collectors.toList());
     }
 
-    private void createNecessaryDirectories() throws IOException {
-        Path templatePath = Paths.get("resources/templates");
-        if (directoryIsAbsent(templatePath)) {
-            Files.createDirectories(templatePath);
-        }
-        Path wwwPath = Paths.get(new File(welcomePage).getParent());
-        if (directoryIsAbsent(wwwPath)) {
-            Files.createDirectories(wwwPath);
-        }
-        Path logPath = Paths.get(new File(loggingPage).getParent());
-        if (directoryIsAbsent(logPath)) {
-            Files.createDirectories(logPath);
-        }
+    private static boolean notInDefaultPackage(Path file) {
+        return file.getParent().toString().replaceAll("\\\\", "/").split(applicationPath).length == 2;
     }
 
-    private boolean directoryIsAbsent(Path directory) {
-        return !(Files.exists(directory) && Files.isDirectory(directory));
+    private static boolean isClassFile(Path file) {
+        return file.getFileName().toString().endsWith(".class");
     }
 
-    private void createNecessaryFiles() throws IOException {
-        File welcomePage = new File(this.welcomePage);
-        if (fileIsAbsent(welcomePage)) {
-            createWelcomePage(welcomePage);
-        }
-        File loggingPage = new File(this.loggingPage);
-        if (fileIsAbsent(loggingPage)) {
-            loggingPage.createNewFile();
-        }
-    }
-
-    private boolean fileIsAbsent(File file) {
-        return !(file.exists() && file.isFile());
-    }
-
-    private void createWelcomePage(File welcomePage) {
-        try (FileWriter writer = new FileWriter(welcomePage)) {
-            writer.write("Web Server Implemented Using Java!");
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private static String toFqcn(Path classFile) {
+        String packageName = classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath)[1].replace("/", ".");
+        String className = classFile.getFileName().toString().split("\\.class")[0];
+        return String.format("%s.%s", packageName, className);
     }
 
 }
