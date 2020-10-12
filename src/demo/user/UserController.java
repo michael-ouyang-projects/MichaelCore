@@ -23,7 +23,6 @@ public class UserController implements IUserController {
         return "index.html";
     }
 
-    @Override
     @Get("/add")
     public String addUserByGet(Map<String, String> requestParameters) {
         String name = requestParameters.get("name");
@@ -32,7 +31,6 @@ public class UserController implements IUserController {
         return "success.html";
     }
 
-    @Override
     @Post("/add")
     @AopHere(SayHelloAop.class)
     public String addUserByPost(Map<String, String> requestParameters) {

@@ -14,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Map;
 
-import tw.framework.michaelcore.ioc.SingletonBeanFactory;
+import tw.framework.michaelcore.ioc.CoreContext;
 
 public class RequestProcessor implements Runnable {
 
@@ -22,9 +22,9 @@ public class RequestProcessor implements Runnable {
     private String webRoot;
     private File logFile;
 
-    public RequestProcessor(Socket socket, String webRoot, File logFile) {
+    public RequestProcessor(Socket socket, File logFile) {
         this.socket = socket;
-        this.webRoot = webRoot;
+        this.webRoot = "resources";
         this.logFile = logFile;
     }
 
@@ -92,12 +92,12 @@ public class RequestProcessor implements Runnable {
     private byte[] getResource(Request request) {
         byte[] resource = null;
         try {
-            Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
+            Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) CoreContext.getBean("requestMapping");
             Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
             Method mappingMethod = mapping.get(request.getRequestPath());
             if (mappingMethod != null) {
                 Object returningObject = null;
-                Object clazz = SingletonBeanFactory.getBean(mappingMethod.getDeclaringClass().getName());
+                Object clazz = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
                 if (Proxy.isProxyClass(clazz.getClass())) {
                     returningObject = Proxy.getInvocationHandler(clazz).invoke(clazz, mappingMethod, new Object[] {request.getRequestParameters() });
                 } else {

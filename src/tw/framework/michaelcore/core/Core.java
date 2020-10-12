@@ -24,7 +24,7 @@ import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
-import tw.framework.michaelcore.ioc.SingletonBeanFactory;
+import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Service;
@@ -40,50 +40,43 @@ public class Core {
     public String listeningPort;
 
     @Value
-    public String webRoot;
-
-    @Value
-    public String templatePath;
-
-    @Value
     public String welcomePage;
 
     @Value
     public String loggingPage;
 
-    @Bean
-    public Map<String, Map<String, Method>> requestMapping() {
-        Map<String, Map<String, Method>> requestMapping = new HashMap<>();
-        requestMapping.put("GET", new HashMap<>());
-        requestMapping.put("POST", new HashMap<>());
-        return requestMapping;
+    public static void start() {
+        readApplicationProperties();
+        initializeContainer();
+        CoreContext.getBean(Core.class.getName(), Core.class).startServer();
     }
 
-    public static void start() {
+    private static void readApplicationProperties() {
         try {
-            Map<String, String> propertiesMap = null;
             List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
-            if (properties.size() > 0) {
-                propertiesMap = new HashMap<>();
-                for (String property : properties) {
-                    String[] keyValue = property.split("=");
-                    propertiesMap.put(keyValue[0], keyValue[1]);
-                }
-            }
-            SingletonBeanFactory.addBean("michaelcore.application.properties", propertiesMap);
+            Map<String, String> propertyMapping = processProperties(properties);
+            CoreContext.addBean("michaelcore.properties", propertyMapping);
         } catch (IOException e) {
-            e.printStackTrace();
+            System.err.println("Error while reading application.properties.");
         }
-        initializeContainer();
+    }
 
-        Core core = (Core) SingletonBeanFactory.getBean(Core.class.getName());
-        core.startServer();
+    private static Map<String, String> processProperties(List<String> properties) {
+        Map<String, String> propertyMapping = null;
+        if (properties.size() > 0) {
+            propertyMapping = new HashMap<>();
+            for (String property : properties) {
+                String[] keyValue = property.split("=");
+                propertyMapping.put(keyValue[0], keyValue[1]);
+            }
+        }
+        return propertyMapping;
     }
 
     @SuppressWarnings("unchecked")
     private static void initializeContainer() {
         try {
-            Map<String, String> propertiesMap = (Map<String, String>) SingletonBeanFactory.getBean("michaelcore.application.properties");
+            Map<String, String> propertiesMap = CoreContext.getBean("michaelcore.properties", Map.class);
             String applicationPath;
             if (Boolean.parseBoolean(propertiesMap.get("isWindowsSystem"))) {
                 applicationPath = Core.class.getResource("/").getPath().substring(1);
@@ -109,18 +102,18 @@ public class Core {
                 try {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class)) {
-                        Object instance = SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
+                        Object instance = CoreContext.addBean(clazz.getName(), clazz.newInstance());
                         for (Method method : clazz.getMethods()) {
                             if (method.isAnnotationPresent(Bean.class)) {
-                                SingletonBeanFactory.addBean(method.getName(), method.invoke(instance));
+                                CoreContext.addBean(method.getName(), method.invoke(instance));
                             }
                         }
                     }
                     if (clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class) || clazz.isAnnotationPresent(AopHandler.class)) {
-                        if (!SingletonBeanFactory.containsBean(clazz.getName())) {
-                            Object instance = SingletonBeanFactory.addBean(clazz.getName(), clazz.newInstance());
-                            for(Class<?> implementedInterface : clazz.getInterfaces()) {
-                                SingletonBeanFactory.addBean(implementedInterface.getName(), instance);
+                        if (!CoreContext.containsBean(clazz.getName())) {
+                            Object instance = CoreContext.addBean(clazz.getName(), clazz.newInstance());
+                            for (Class<?> implementedInterface : clazz.getInterfaces()) {
+                                CoreContext.addBean(implementedInterface.getName(), instance);
                             }
                         }
                     }
@@ -136,21 +129,21 @@ public class Core {
                     if (clazz.isAnnotationPresent(AopInterface.class)) {
                         Class<?> aopIterface = clazz.getAnnotation(AopInterface.class).value();
                         if (clazz.isAnnotationPresent(AopHere.class)) {
-                            InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(clazz.getAnnotation(AopHere.class).value().getName());
+                            InvocationHandler aopHandler = (InvocationHandler) CoreContext.getBean(clazz.getAnnotation(AopHere.class).value().getName());
                             Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
-                            SingletonBeanFactory.addAopProxyBean(clazz.getName(), proxy);
-                            for(Class<?> implementedInterface : clazz.getInterfaces()) {
-                                SingletonBeanFactory.addAopProxyBean(implementedInterface.getName(), proxy);
+                            CoreContext.addAopProxyBean(clazz.getName(), proxy);
+                            for (Class<?> implementedInterface : clazz.getInterfaces()) {
+                                CoreContext.addAopProxyBean(implementedInterface.getName(), proxy);
                             }
                             continue;
                         }
                         for (Method method : clazz.getMethods()) {
                             if (method.isAnnotationPresent(AopHere.class)) {
-                                InvocationHandler aopHandler = (InvocationHandler) SingletonBeanFactory.getBean(method.getAnnotation(AopHere.class).value().getName());
+                                InvocationHandler aopHandler = (InvocationHandler) CoreContext.getBean(method.getAnnotation(AopHere.class).value().getName());
                                 Object proxy = Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
-                                SingletonBeanFactory.addAopProxyBean(clazz.getName(), proxy);
-                                for(Class<?> implementedInterface : clazz.getInterfaces()) {
-                                    SingletonBeanFactory.addAopProxyBean(implementedInterface.getName(), proxy);
+                                CoreContext.addAopProxyBean(clazz.getName(), proxy);
+                                for (Class<?> implementedInterface : clazz.getInterfaces()) {
+                                    CoreContext.addAopProxyBean(implementedInterface.getName(), proxy);
                                 }
                                 continue;
                             }
@@ -167,13 +160,13 @@ public class Core {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
                             || clazz.isAnnotationPresent(AopHandler.class)) {
-                        Object instance = SingletonBeanFactory.getBean(clazz.getName());
+                        Object instance = CoreContext.getBean(clazz.getName());
                         if (Proxy.isProxyClass(instance.getClass())) {
-                            instance = SingletonBeanFactory.getBean(clazz.getName() + ".real");
+                            instance = CoreContext.getBean(clazz.getName() + ".real");
                         }
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Autowired.class)) {
-                                Object dependencyInstance = SingletonBeanFactory.getBean(field.getType().getName());
+                                Object dependencyInstance = CoreContext.getBean(field.getType().getName());
                                 field.set(instance, dependencyInstance);
                             }
                         }
@@ -189,9 +182,9 @@ public class Core {
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
                             || clazz.isAnnotationPresent(AopHandler.class)) {
-                        Object instance = SingletonBeanFactory.getBean(clazz.getName());
+                        Object instance = CoreContext.getBean(clazz.getName());
                         if (Proxy.isProxyClass(instance.getClass())) {
-                            instance = SingletonBeanFactory.getBean(clazz.getName() + ".real");
+                            instance = CoreContext.getBean(clazz.getName() + ".real");
                         }
                         for (Field field : clazz.getFields()) {
                             if (field.isAnnotationPresent(Value.class)) {
@@ -207,7 +200,7 @@ public class Core {
             // Request Mapping
             fqcnList.forEach(fqcn -> {
                 try {
-                    Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) SingletonBeanFactory.getBean("requestMapping");
+                    Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) CoreContext.getBean("requestMapping");
                     Class<?> clazz = Class.forName(fqcn);
                     if (clazz.isAnnotationPresent(Controller.class)) {
                         for (Method method : clazz.getMethods()) {
@@ -230,7 +223,7 @@ public class Core {
                     if (clazz.isAnnotationPresent(Configuration.class)) {
                         for (Method method : clazz.getMethods()) {
                             if (method.isAnnotationPresent(ExecuteAfterContainerStartup.class)) {
-                                method.invoke(SingletonBeanFactory.getBean(clazz.getName()));
+                                method.invoke(CoreContext.getBean(clazz.getName()));
                             }
                         }
                     }
@@ -247,7 +240,7 @@ public class Core {
         ExecutorService executor = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(listeningPort))) {
             while (true) {
-                executor.submit(new RequestProcessor(serverSocket.accept(), webRoot, new File(loggingPage)));
+                executor.submit(new RequestProcessor(serverSocket.accept(), new File(loggingPage)));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -265,7 +258,7 @@ public class Core {
     }
 
     private void createNecessaryDirectories() throws IOException {
-        Path templatePath = Paths.get(this.templatePath);
+        Path templatePath = Paths.get("resources/templates");
         if (directoryIsAbsent(templatePath)) {
             Files.createDirectories(templatePath);
         }
