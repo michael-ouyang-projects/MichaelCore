@@ -8,11 +8,11 @@ import tw.framework.michaelcore.ioc.annotation.Service;
 
 @Service
 @AopInterface(IUserService.class)
+@AopHere(SayHelloAop.class)
 public class UserService implements IUserService {
 
     @Override
     @Transactional
-    @AopHere(SayHelloAop.class)
     public void addUser(User user) {
         System.out.println(String.format("Add new user to db => name: %s, age: %d", user.getName(), user.getAge()));
     }
