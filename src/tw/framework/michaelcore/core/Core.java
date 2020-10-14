@@ -2,18 +2,15 @@ package tw.framework.michaelcore.core;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
-import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
@@ -22,56 +19,58 @@ import tw.framework.michaelcore.ioc.Component;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Service;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.MvcCore;
-import tw.framework.michaelcore.mvc.annotation.Controller;
-import tw.framework.michaelcore.mvc.annotation.Get;
-import tw.framework.michaelcore.mvc.annotation.Post;
 
 @Configuration
 public class Core {
 
     static {
         try {
-            List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
-            properties.forEach(property -> {
-                String[] keyValue = property.split("=");
-                CoreContext.addProperties(keyValue[0], keyValue[1]);
-            });
+            putPropertiesToContainer();
+            putFqcnsToContainer();
         } catch (Exception e) {
-            System.err.println("Error while processing application.properties!");
-        }
-    }
-
-    public static void start() {
-        initializeMichaelCore();
-        CoreContext.getBean(MvcCore.class.getName(), MvcCore.class).startServer();
-    }
-
-    private static void initializeMichaelCore() {
-        try {
-            List<String> fqcns = getFqcns();
-            initializeIoC(fqcns);
-            initializeAOP(fqcns);
-            initializeAutowired(fqcns);
-            initializeValueProperties(fqcns);
-            initializeRequestMapping(fqcns);
-            runStartupCode(fqcns);
-        } catch (Exception e) {
+            System.err.println("Core Initial Error!");
             e.printStackTrace();
         }
     }
 
-    private static List<String> getFqcns() throws IOException {
+    public static void start() {
+        initializeCore();
+        CoreContext.getBean(MvcCore.class).startServer();
+    }
+
+    private static void initializeCore() {
+        try {
+            initializeIoC();
+            initializeAOP();
+            initializeAutowired();
+            initializeValueProperties();
+            executeStartupCode();
+        } catch (Exception e) {
+            System.err.println("initializeCore() Error!");
+            e.printStackTrace();
+        }
+    }
+
+    private static void putPropertiesToContainer() throws IOException {
+        List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
+        properties.forEach(property -> {
+            String[] keyValue = property.split("=");
+            CoreContext.addProperties(keyValue[0], keyValue[1]);
+        });
+    }
+
+    private static void putFqcnsToContainer() throws IOException {
         String applicationPath = getApplicationPath();
-        return Files.walk(Paths.get(applicationPath))
+        List<String> fqcns = Files.walk(Paths.get(applicationPath))
                 .filter(Files::isRegularFile)
                 .filter(file -> {
                     return notInDefaultPackage(file, applicationPath) && isClassFile(file);
                 }).map(classFile -> {
                     return toFqcn(classFile, applicationPath);
                 }).collect(Collectors.toList());
+        CoreContext.setFqcns(fqcns);
     }
 
     private static String getApplicationPath() {
@@ -98,8 +97,8 @@ public class Core {
         return Class.forName(fqcn);
     }
 
-    private static void initializeIoC(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
+    private static void initializeIoC() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isConfigurationClass(clazz)) {
                 processConfigurationClass(clazz);
@@ -124,8 +123,8 @@ public class Core {
 
     private static void processComponentClass(Class<?> clazz) throws Exception {
         Object instance = addBeanToContainer(clazz);
-        for (Class<?> implementedInterface : clazz.getInterfaces()) {
-            CoreContext.addBean(implementedInterface.getName(), instance);
+        for (Class<?> interfazz : clazz.getInterfaces()) {
+            addBeanToContainer(interfazz, instance);
         }
     }
 
@@ -137,17 +136,21 @@ public class Core {
         return CoreContext.addBean(method.getName(), method.invoke(instance));
     }
 
+    private static Object addBeanToContainer(Class<?> interfazz, Object instance) throws Exception {
+        return CoreContext.addBean(interfazz.getName(), instance);
+    }
+
     private static boolean isBeanMethod(Method method) {
         return method.isAnnotationPresent(Bean.class);
     }
 
-    private static void initializeAOP(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
+    private static void initializeAOP() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (needToCreateProxy(clazz)) {
                 Object proxy = createProxy(clazz);
-                CoreContext.addAopProxyBean(clazz.getName(), proxy);
-                processInterfaces(clazz, proxy);
+                addProxyBeanToContainer(clazz, proxy);
+                redirectInterfacesToProxyBean(clazz, proxy);
             }
         }
     }
@@ -179,7 +182,7 @@ public class Core {
 
     private static Object createProxy(Class<?> clazz) {
         Class<?> aopIterface = getAopInterface(clazz);
-        InvocationHandler aopHandler = getAopHandler(clazz);
+        MichaelCoreAopHandler aopHandler = getAopHandler();
         return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
     }
 
@@ -187,79 +190,71 @@ public class Core {
         return clazz.getAnnotation(AopInterface.class).value();
     }
 
-    private static InvocationHandler getAopHandler(Class<?> clazz) {
-        return CoreContext.getBean(MichaelCoreAopHandler.class.getName(), InvocationHandler.class);
+    private static MichaelCoreAopHandler getAopHandler() {
+        return CoreContext.getBean(MichaelCoreAopHandler.class);
     }
 
-    private static void processInterfaces(Class<?> clazz, Object proxy) {
+    private static Object addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {
+        return CoreContext.addProxyBean(clazz.getName(), proxy);
+    }
+
+    private static void redirectInterfacesToProxyBean(Class<?> clazz, Object proxy) {
         for (Class<?> interfazz : clazz.getInterfaces()) {
-            CoreContext.addAopProxyBean(interfazz.getName(), proxy);
+            CoreContext.addProxyBean(interfazz.getName(), proxy);
         }
     }
 
-    private static void initializeAutowired(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
+    private static void initializeAutowired() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
-            if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
-                    || clazz.isAnnotationPresent(AopHandler.class)) {
-                Object instance = CoreContext.getBean(clazz.getName());
-                if (Proxy.isProxyClass(instance.getClass())) {
-                    instance = CoreContext.getBean(clazz.getName() + ".real");
-                }
-                for (Field field : clazz.getFields()) {
-                    if (field.isAnnotationPresent(Autowired.class)) {
-                        Object dependencyInstance = CoreContext.getBean(field.getType().getName());
-                        field.set(instance, dependencyInstance);
-                    }
-                }
+            if (isManagedBean(clazz)) {
+                autowireDependency(clazz, CoreContext.getRealBean(clazz));
             }
         }
     }
 
-    private static void initializeValueProperties(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
-            Class<?> clazz = getClassByFqcn(fqcn);
-            if (clazz.isAnnotationPresent(Configuration.class) || clazz.isAnnotationPresent(Controller.class) || clazz.isAnnotationPresent(Service.class)
-                    || clazz.isAnnotationPresent(AopHandler.class)) {
-                Object instance = CoreContext.getBean(clazz.getName());
-                if (Proxy.isProxyClass(instance.getClass())) {
-                    instance = CoreContext.getBean(clazz.getName() + ".real");
-                }
-                for (Field field : clazz.getFields()) {
-                    if (field.isAnnotationPresent(Value.class)) {
-                        field.set(instance, CoreContext.getProperties(field.getName()));
-                    }
-                }
+    private static boolean isManagedBean(Class<?> clazz) {
+        return isConfigurationClass(clazz) || Component.isComponentClass(clazz);
+    }
+
+    private static void autowireDependency(Class<?> clazz, Object bean) throws Exception {
+        for (Field field : clazz.getFields()) {
+            if (field.isAnnotationPresent(Autowired.class)) {
+                field.set(bean, CoreContext.getBean(field.getType()));
             }
         }
     }
 
-    private static void initializeRequestMapping(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
-            @SuppressWarnings("unchecked")
-            Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) CoreContext.getBean("requestMapping");
+    private static void initializeValueProperties() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
-            if (clazz.isAnnotationPresent(Controller.class)) {
-                for (Method method : clazz.getMethods()) {
-                    if (method.isAnnotationPresent(Get.class)) {
-                        requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
-                    } else if (method.isAnnotationPresent(Post.class)) {
-                        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
-                    }
-                }
+            if (isManagedBean(clazz)) {
+                insertValue(clazz, CoreContext.getRealBean(clazz));
             }
         }
     }
 
-    private static void runStartupCode(List<String> fqcns) throws Exception {
-        for (String fqcn : fqcns) {
+    private static void insertValue(Class<?> clazz, Object bean) throws Exception {
+        for (Field field : clazz.getFields()) {
+            if (field.isAnnotationPresent(Value.class)) {
+                field.set(bean, CoreContext.getProperties(field.getName()));
+            }
+        }
+    }
+
+    private static void executeStartupCode() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isConfigurationClass(clazz)) {
-                for (Method method : clazz.getMethods()) {
-                    if (method.isAnnotationPresent(ExecuteAfterContainerStartup.class)) {
-                        method.invoke(CoreContext.getBean(clazz.getName()));
-                    }
-                }
+                executeMethodWithStartupAnnotation(clazz, CoreContext.getBean(clazz));
+            }
+        }
+    }
+
+    private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object bean) throws Exception {
+        for (Method method : clazz.getMethods()) {
+            if (method.isAnnotationPresent(ExecuteAfterContainerStartup.class)) {
+                method.invoke(bean);
             }
         }
     }

@@ -15,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.Map;
 
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.mvc.MvcCore;
 
 public class RequestProcessor implements Runnable {
 
@@ -88,11 +89,10 @@ public class RequestProcessor implements Runnable {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
     private byte[] getResource(Request request) {
         byte[] resource = null;
         try {
-            Map<String, Map<String, Method>> requestMapping = (Map<String, Map<String, Method>>) CoreContext.getBean("requestMapping");
+            Map<String, Map<String, Method>> requestMapping = MvcCore.getRequestMapping();
             Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
             Method mappingMethod = mapping.get(request.getRequestPath());
             if (mappingMethod != null) {
