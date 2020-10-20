@@ -15,14 +15,13 @@ import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
-import tw.framework.michaelcore.ioc.Component;
+import tw.framework.michaelcore.ioc.Components;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.MvcCore;
 
-@Configuration
 public class Core {
 
     static {
@@ -102,7 +101,7 @@ public class Core {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isConfigurationClass(clazz)) {
                 processConfigurationClass(clazz);
-            } else if (Component.isComponentClass(clazz)) {
+            } else if (Components.isComponentClass(clazz)) {
                 processComponentClass(clazz);
             }
         }
@@ -214,7 +213,7 @@ public class Core {
     }
 
     private static boolean isManagedBean(Class<?> clazz) {
-        return isConfigurationClass(clazz) || Component.isComponentClass(clazz);
+        return isConfigurationClass(clazz) || Components.isComponentClass(clazz);
     }
 
     private static void autowireDependency(Class<?> clazz, Object bean) throws Exception {

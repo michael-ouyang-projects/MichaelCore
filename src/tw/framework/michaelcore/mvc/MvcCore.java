@@ -13,10 +13,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import tw.framework.michaelcore.core.RequestProcessor;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Get;
@@ -34,22 +34,16 @@ public class MvcCore {
     @Value
     public String loggingPage;
 
-    private static Map<String, Map<String, Method>> requestMapping = createRequestMapping();
+    @Autowired
+    public RequestProcessor requestProcessor;
 
-    private static Map<String, Map<String, Method>> createRequestMapping() {
-        Map<String, Map<String, Method>> requestMapping = new HashMap<>();
-        requestMapping.put("GET", new HashMap<>());
-        requestMapping.put("POST", new HashMap<>());
-        requestMapping.put("PUT", new HashMap<>());
-        requestMapping.put("DELETE", new HashMap<>());
-        return requestMapping;
-    }
+    private Map<String, Map<String, Method>> requestMapping;
 
     public void startServer() {
         ExecutorService executor = Executors.newCachedThreadPool();
         try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(listeningPort))) {
             while (true) {
-                executor.submit(new RequestProcessor(serverSocket.accept(), new File(loggingPage)));
+                executor.submit(new RequestThread(serverSocket.accept(), requestProcessor));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -69,6 +63,7 @@ public class MvcCore {
     }
 
     private void initializeRequestMapping() throws Exception {
+        requestMapping = createRequestMapping();
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isControllerClass(clazz)) {
@@ -77,30 +72,47 @@ public class MvcCore {
         }
     }
 
-    private static Class<?> getClassByFqcn(String fqcn) throws Exception {
+    private Map<String, Map<String, Method>> createRequestMapping() {
+        Map<String, Map<String, Method>> requestMapping = new HashMap<>();
+        requestMapping.put("GET", new HashMap<>());
+        requestMapping.put("POST", new HashMap<>());
+        requestMapping.put("PUT", new HashMap<>());
+        requestMapping.put("DELETE", new HashMap<>());
+        return requestMapping;
+    }
+
+    private Class<?> getClassByFqcn(String fqcn) throws Exception {
         return Class.forName(fqcn);
     }
 
-    private static boolean isControllerClass(Class<?> clazz) {
+    private boolean isControllerClass(Class<?> clazz) {
         return clazz.isAnnotationPresent(Controller.class);
     }
 
-    private static void mapUrlToMethod(Class<?> clazz) {
+    private void mapUrlToMethod(Class<?> clazz) {
         for (Method method : clazz.getMethods()) {
             if (isGetMethod(method)) {
-                requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
+                mapToGet(method);
             } else if (isPostMethod(method)) {
-                requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
+                mapToPost(method);
             }
         }
     }
 
-    private static boolean isGetMethod(Method method) {
+    private boolean isGetMethod(Method method) {
         return method.isAnnotationPresent(Get.class);
     }
 
-    private static boolean isPostMethod(Method method) {
+    private boolean isPostMethod(Method method) {
         return method.isAnnotationPresent(Post.class);
+    }
+
+    private void mapToGet(Method method) {
+        requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
+    }
+
+    private void mapToPost(Method method) {
+        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
     }
 
     private void createNecessaryDirectories() throws IOException {
@@ -145,7 +157,7 @@ public class MvcCore {
         }
     }
 
-    public static Map<String, Map<String, Method>> getRequestMapping() {
+    public Map<String, Map<String, Method>> getRequestMapping() {
         return requestMapping;
     }
 

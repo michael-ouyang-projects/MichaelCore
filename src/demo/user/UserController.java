@@ -18,7 +18,6 @@ public class UserController implements IUserController {
     @Autowired
     public IUserService userService;
 
-    @Override
     @Get("/")
     public String home(Map<String, String> requestParameters) {
         return "index.html";
