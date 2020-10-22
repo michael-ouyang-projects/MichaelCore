@@ -8,12 +8,12 @@ public class SayHelloAop extends MichaelCoreAopHandler {
 
     @Override
     public void before() {
-        System.out.println("Hello AOP!");
+        System.out.println("Hello POST!");
     }
 
     @Override
     public void after() {
-        System.out.println("GoodBye AOP!");
+        System.out.println("GoodBye POST!");
     }
 
 }

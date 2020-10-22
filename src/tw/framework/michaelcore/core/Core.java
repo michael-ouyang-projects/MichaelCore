@@ -43,9 +43,10 @@ public class Core {
     private static void initializeCore() {
         try {
             initializeIoC();
+            initializeValueProperties();
+            initializeIoCForBean();
             initializeAOP();
             initializeAutowired();
-            initializeValueProperties();
             executeStartupCode();
         } catch (Exception e) {
             System.err.println("initializeCore() Error!");
@@ -103,7 +104,7 @@ public class Core {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isConfigurationClass(clazz)) {
-                processConfigurationClass(clazz);
+                addBeanToContainer(clazz);
             } else if (Components.isComponentClass(clazz)) {
                 processComponentClass(clazz);
             }
@@ -112,15 +113,6 @@ public class Core {
 
     private static boolean isConfigurationClass(Class<?> clazz) {
         return clazz.isAnnotationPresent(Configuration.class);
-    }
-
-    private static void processConfigurationClass(Class<?> clazz) throws Exception {
-        Object instance = addBeanToContainer(clazz);
-        for (Method method : clazz.getMethods()) {
-            if (isBeanMethod(method)) {
-                addBeanToContainer(method, instance);
-            }
-        }
     }
 
     private static void processComponentClass(Class<?> clazz) throws Exception {
@@ -144,6 +136,24 @@ public class Core {
 
     private static boolean isBeanMethod(Method method) {
         return method.isAnnotationPresent(Bean.class);
+    }
+
+    private static void initializeIoCForBean() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
+            Class<?> clazz = getClassByFqcn(fqcn);
+            if (isConfigurationClass(clazz)) {
+                processConfigurationClass(clazz);
+            }
+        }
+    }
+
+    private static void processConfigurationClass(Class<?> clazz) throws Exception {
+        Object instance = CoreContext.getBean(clazz.getName());
+        for (Method method : clazz.getMethods()) {
+            if (isBeanMethod(method)) {
+                addBeanToContainer(method, instance);
+            }
+        }
     }
 
     private static void initializeAOP() throws Exception {

@@ -11,9 +11,8 @@ public class UserRepository {
     public JdbcTemplate jdbcTemplate;
 
     public void addUser(User user) {
-        String sql = String.format("INSERT INTO USER (NAME, AGE) VALUES ('%s', '%s')", user.getName(), user.getAge());
+        String sql = String.format("INSERT INTO TT_USER(NAME, AGE) VALUES('%s', '%s')", user.getName(), user.getAge());
         jdbcTemplate.execute(sql);
-        System.out.println(sql);
     }
 
 }
