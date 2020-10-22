@@ -15,6 +15,7 @@ import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
+import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.Components;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
@@ -55,8 +56,10 @@ public class Core {
     private static void putPropertiesToContainer() throws IOException {
         List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
         properties.forEach(property -> {
-            String[] keyValue = property.split("=");
-            CoreContext.addProperties(keyValue[0], keyValue[1]);
+            if (property.trim().length() > 0) {
+                String[] keyValue = property.split("=");
+                CoreContext.addProperties(keyValue[0], keyValue[1]);
+            }
         });
     }
 
@@ -164,7 +167,7 @@ public class Core {
     }
 
     private static boolean aopOnClass(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(AopHere.class)) {
+        if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class)) {
             return true;
         }
         return false;
@@ -172,7 +175,7 @@ public class Core {
 
     private static boolean aopOnMethod(Class<?> clazz) {
         for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(AopHere.class)) {
+            if (method.isAnnotationPresent(AopHere.class) || method.isAnnotationPresent(Transactional.class)) {
                 return true;
             }
         }

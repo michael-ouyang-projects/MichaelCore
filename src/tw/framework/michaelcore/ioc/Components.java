@@ -3,13 +3,14 @@ package tw.framework.michaelcore.ioc;
 import java.lang.annotation.Annotation;
 
 import tw.framework.michaelcore.aop.annotation.AopHandler;
+import tw.framework.michaelcore.data.annotation.Repository;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Service;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 
 public enum Components {
 
-    COMPONENT(Component.class), CONTROLLER(Controller.class), SERVICE(Service.class), AOPHANDLER(AopHandler.class);
+    COMPONENT(Component.class), CONTROLLER(Controller.class), SERVICE(Service.class), REPOSITORY(Repository.class), AOPHANDLER(AopHandler.class);
 
     private Class<? extends Annotation> componentClass;
 
