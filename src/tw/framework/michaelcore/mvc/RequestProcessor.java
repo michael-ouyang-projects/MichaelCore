@@ -5,7 +5,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -80,13 +79,8 @@ public class RequestProcessor {
             Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
             Method mappingMethod = mapping.get(request.getRequestPath());
             if (mappingMethod != null) {
-                Object returningObject = null;
                 Object clazz = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                if (Proxy.isProxyClass(clazz.getClass())) {
-                    returningObject = Proxy.getInvocationHandler(clazz).invoke(clazz, mappingMethod, new Object[] {request.getRequestParameters() });
-                } else {
-                    returningObject = mappingMethod.invoke(clazz, request.getRequestParameters());
-                }
+                Object returningObject = mappingMethod.invoke(clazz, request.getRequestParameters());
                 resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
             } else {
                 resource = Files.readAllBytes(Paths.get(webRoot, request.getRequestPath()));

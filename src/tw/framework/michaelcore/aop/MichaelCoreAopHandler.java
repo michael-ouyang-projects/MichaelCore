@@ -1,10 +1,10 @@
 package tw.framework.michaelcore.aop;
 
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
+import net.sf.cglib.proxy.InvocationHandler;
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.data.TransactionalAop;

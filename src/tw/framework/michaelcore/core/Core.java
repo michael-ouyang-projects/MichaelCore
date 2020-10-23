@@ -3,16 +3,15 @@ package tw.framework.michaelcore.core;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.data.annotation.Transactional;
@@ -168,12 +167,7 @@ public class Core {
     }
 
     private static boolean needToCreateProxy(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(AopInterface.class)) {
-            if (aopOnClass(clazz) || aopOnMethod(clazz)) {
-                return true;
-            }
-        }
-        return false;
+        return aopOnClass(clazz) || aopOnMethod(clazz);
     }
 
     private static boolean aopOnClass(Class<?> clazz) {
@@ -193,13 +187,10 @@ public class Core {
     }
 
     private static Object createProxy(Class<?> clazz) {
-        Class<?> aopIterface = getAopInterface(clazz);
-        MichaelCoreAopHandler aopHandler = getAopHandler();
-        return Proxy.newProxyInstance(clazz.getClassLoader(), new Class[] {aopIterface }, aopHandler);
-    }
-
-    private static Class<?> getAopInterface(Class<?> clazz) {
-        return clazz.getAnnotation(AopInterface.class).value();
+        Enhancer enhancer = new Enhancer();
+        enhancer.setSuperclass(clazz);
+        enhancer.setCallback(getAopHandler());
+        return enhancer.create();
     }
 
     private static MichaelCoreAopHandler getAopHandler() {

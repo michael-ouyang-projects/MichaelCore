@@ -1,6 +1,5 @@
 package tw.framework.michaelcore.ioc;
 
-import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +26,7 @@ public class CoreContext {
 
     public static Object getRealBean(Class<?> clazz) {
         Object bean = beanFactory.get(clazz.getName());
-        if (Proxy.isProxyClass(bean.getClass())) {
+        if (bean.getClass().getName().contains("$$EnhancerByCGLIB$$")) {
             bean = beanFactory.get(clazz.getName() + ".real");
         }
         return bean;

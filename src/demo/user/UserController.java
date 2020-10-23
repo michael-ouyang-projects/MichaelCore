@@ -5,19 +5,17 @@ import java.util.Map;
 import demo.aop.SayHelloAop;
 import demo.aop.TestCtrlAop;
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.aop.annotation.AopInterface;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
 
 @Controller
-@AopInterface(IUserController.class)
 @AopHere(TestCtrlAop.class)
-public class UserController implements IUserController {
+public class UserController {
 
     @Autowired
-    public IUserService userService;
+    public UserService userService;
 
     @Get("/")
     public String home(Map<String, String> requestParameters) {
