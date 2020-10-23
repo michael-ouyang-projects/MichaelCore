@@ -23,6 +23,7 @@ public class TransactionalAop extends MichaelCoreAopHandler {
             connection.setAutoCommit(false);
             threadConnection.set(connection);
             isCommit.set(true);
+            System.out.println("IN Transaction");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -30,13 +31,13 @@ public class TransactionalAop extends MichaelCoreAopHandler {
 
     @Override
     public void after() {
-        Connection connection = threadConnection.get();
-        try {
+        try (Connection connection = threadConnection.get()) {
             if (isCommit.get()) {
                 connection.commit();
             } else {
                 connection.rollback();
             }
+            System.out.println("OUT Transaction");
         } catch (SQLException e) {
             e.printStackTrace();
         }

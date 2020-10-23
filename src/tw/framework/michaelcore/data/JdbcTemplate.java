@@ -12,10 +12,6 @@ public class JdbcTemplate {
     public void execute(String sql) {
         Connection connection = TransactionalAop.getThreadConnection().get();
         try {
-            String sqlTest = String.format("INSERT INTO TT_USER(NAME, AGE) VALUES('%s', '%s')", "Test", "10");
-            PreparedStatement statementTest = connection.prepareStatement(sqlTest);
-            statementTest.execute();
-
             PreparedStatement statement = connection.prepareStatement(sql);
             statement.execute();
         } catch (SQLException e) {
