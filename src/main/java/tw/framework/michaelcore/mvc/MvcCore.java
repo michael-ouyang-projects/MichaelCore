@@ -19,8 +19,10 @@ import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.annotation.Controller;
+import tw.framework.michaelcore.mvc.annotation.Delete;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
+import tw.framework.michaelcore.mvc.annotation.Put;
 
 @Configuration
 public class MvcCore {
@@ -95,6 +97,10 @@ public class MvcCore {
                 mapToGet(method);
             } else if (isPostMethod(method)) {
                 mapToPost(method);
+            } else if (isPutMethod(method)) {
+                mapToPut(method);
+            } else if (isDeleteMethod(method)) {
+                mapToDelete(method);
             }
         }
     }
@@ -107,11 +113,27 @@ public class MvcCore {
         return method.isAnnotationPresent(Post.class);
     }
 
+    private boolean isPutMethod(Method method) {
+        return method.isAnnotationPresent(Put.class);
+    }
+
+    private boolean isDeleteMethod(Method method) {
+        return method.isAnnotationPresent(Delete.class);
+    }
+
     private void mapToGet(Method method) {
         requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
     }
 
     private void mapToPost(Method method) {
+        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
+    }
+
+    private void mapToPut(Method method) {
+        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
+    }
+
+    private void mapToDelete(Method method) {
         requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
     }
 

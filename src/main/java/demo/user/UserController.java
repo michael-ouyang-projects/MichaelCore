@@ -1,42 +1,42 @@
 package demo.user;
 
-import java.util.Map;
-
 import demo.aop.SayHelloAop;
-import demo.aop.TestCtrlAop;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.mvc.Model;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
+import tw.framework.michaelcore.mvc.annotation.RequestParam;
 
 @Controller
-@AopHere(TestCtrlAop.class)
 public class UserController {
 
     @Autowired
     public UserService userService;
 
     @Get("/")
-    public String home(Map<String, String> requestParameters) {
-        return "index.html";
+    public Model home() {
+        return new Model("index.html");
     }
 
     @Get("/add")
-    public String addUserByGet(Map<String, String> requestParameters) {
-        String name = requestParameters.get("name");
-        int age = Integer.parseInt(requestParameters.get("age"));
+    public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUser(new User(name, age));
-        return "success.html";
+        Model model = new Model("success.html");
+        model.add("name", name);
+        model.add("age", age);
+        return model;
     }
 
     @Post("/add")
     @AopHere(SayHelloAop.class)
-    public String addUserByPost(Map<String, String> requestParameters) {
-        String name = requestParameters.get("name");
-        int age = Integer.parseInt(requestParameters.get("age"));
+    public Model addUserByPost(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUser(new User(name, age));
-        return "success.html";
+        Model model = new Model("success.html");
+        model.add("name", name);
+        model.add("age", age);
+        return model;
     }
 
 }

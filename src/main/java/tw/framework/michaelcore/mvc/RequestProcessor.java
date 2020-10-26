@@ -8,12 +8,14 @@ import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.HashMap;
 import java.util.Map;
 
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Value;
+import tw.framework.michaelcore.mvc.annotation.RequestParam;
 
 @Component
 public class RequestProcessor {
@@ -28,6 +30,7 @@ public class RequestProcessor {
 
     public RequestInfo getClientRequest(BufferedReader reader) throws IOException {
         StringBuilder requestHeader = new StringBuilder();
+        StringBuilder requestBody = new StringBuilder();
         String line = reader.readLine();
         if (line != null) {
             String method = line.split(" ")[0];
@@ -35,13 +38,13 @@ public class RequestProcessor {
                 requestHeader.append(line + "\n");
                 line = reader.readLine();
             }
-            if ("POST".equals(method)) {
+            if ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) {
                 while (reader.ready()) {
-                    requestHeader.append((char) reader.read());
+                    requestBody.append((char) reader.read());
                 }
             }
         }
-        return requestHeader.toString().length() > 0 ? new RequestInfo(requestHeader.toString()) : null;
+        return requestHeader.toString().length() > 0 ? new RequestInfo(requestHeader.toString(), requestBody.toString()) : null;
     }
 
     private boolean havingData(String line) {
@@ -56,17 +59,17 @@ public class RequestProcessor {
         }
     }
 
-    public void responseToClient(RequestInfo request, OutputStream outputStream) throws IOException {
-        byte[] response = createResponse(request);
+    public void responseToClient(RequestInfo requestInfo, OutputStream outputStream) throws IOException {
+        byte[] response = createResponse(requestInfo);
         if (response != null) {
             outputStream.write(response);
         }
     }
 
-    private byte[] createResponse(RequestInfo request) {
-        byte[] resource = getResource(request);
+    private byte[] createResponse(RequestInfo requestInfo) {
+        byte[] resource = getResource(requestInfo);
         if (resource != null) {
-            byte[] info = getInfo(request, resource);
+            byte[] info = getInfo(requestInfo, resource);
             return concatenateInfoAndResource(info, resource);
         }
         return null;
@@ -75,13 +78,33 @@ public class RequestProcessor {
     private byte[] getResource(RequestInfo request) {
         byte[] resource = null;
         try {
-            Map<String, Map<String, Method>> requestMapping = mvcCore.getRequestMapping();
-            Map<String, Method> mapping = requestMapping.get(request.getRequestMethod());
-            Method mappingMethod = mapping.get(request.getRequestPath());
+            String requestPath = request.getRequestPath();
+            Map<String, String> requestParameters = null;
+            if ("GET".equals(request.getRequestMethod()) && requestPath.contains("?")) {
+                String[] pathAndParameters = requestPath.split("\\?");
+                requestPath = pathAndParameters[0];
+                requestParameters = getRequestParameters(pathAndParameters[1]);
+            } else if ("POST".equals(request.getRequestMethod()) && request.getRequestHeader().contains("Content-Type: application/x-www-form-urlencoded")) {
+                requestParameters = getRequestParameters(request.getRequestBody());
+            }
+
+            Map<String, Method> mapping = mvcCore.getRequestMapping().get(request.getRequestMethod());
+            Method mappingMethod = mapping.get(requestPath);
             if (mappingMethod != null) {
-                Object clazz = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                Object returningObject = mappingMethod.invoke(clazz, request.getRequestParameters());
-                resource = readAndProcessTemplate((String) returningObject, request.getRequestParameters());
+                Object[] parameters = new Object[mappingMethod.getParameterCount()];
+                for (int i = 0; i < mappingMethod.getParameterCount(); i++) {
+                    if (mappingMethod.getParameters()[i].isAnnotationPresent(RequestParam.class)) {
+                        String key = mappingMethod.getParameters()[i].getAnnotation(RequestParam.class).value();
+                        String typeName = mappingMethod.getParameters()[i].getParameterizedType().getTypeName();
+                        parameters[i] = requestParameters.get(key);
+                        if ("int".equals(typeName)) {
+                            parameters[i] = Integer.parseInt((String) parameters[i]);
+                        }
+                    }
+                }
+                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                Model model = (Model) mappingMethod.invoke(controller, parameters);
+                resource = readAndProcessTemplate(model);
             } else {
                 resource = Files.readAllBytes(Paths.get(webRoot, request.getRequestPath()));
             }
@@ -92,14 +115,26 @@ public class RequestProcessor {
         return resource;
     }
 
-    private byte[] readAndProcessTemplate(String templateFileName, Map<String, String> model) throws IOException {
+    private Map<String, String> getRequestParameters(String parametersString) {
+        Map<String, String> requestParameters = null;
+        if (parametersString.length() > 0) {
+            requestParameters = new HashMap<>();
+            for (String parameter : parametersString.split("&")) {
+                String[] keyValue = parameter.split("=");
+                requestParameters.put(keyValue[0], keyValue[1]);
+            }
+        }
+        return requestParameters;
+    }
+
+    private byte[] readAndProcessTemplate(Model model) throws IOException {
         StringBuilder template = new StringBuilder();
-        Files.readAllLines(Paths.get(webRoot, "templates", templateFileName)).forEach(line -> {
+        Files.readAllLines(Paths.get(webRoot, "templates", model.getTemplate())).forEach(line -> {
             if (line.contains("${")) {
                 String[] variables = line.split("\\$\\{");
                 for (int i = 1; i < variables.length; i++) {
                     String variable = variables[i].split("\\}")[0];
-                    line = line.replaceAll(String.format("\\$\\{%s\\}", variable), model.get(variable));
+                    line = line.replaceAll(String.format("\\$\\{%s\\}", variable), String.valueOf(model.get(variable)));
                 }
             }
             template.append(line);
@@ -111,7 +146,8 @@ public class RequestProcessor {
         String infoFormat = "HTTP/1.1 200 OK"
                 + "Content-Length: %d"
                 + "Content-Type: %s\r\n\r\n";
-        return String.format(infoFormat, resource.length, request.getContentType()).getBytes();
+        // return String.format(infoFormat, resource.length, request.getContentType()).getBytes();
+        return String.format(infoFormat, resource.length, "fe").getBytes();
     }
 
     private byte[] concatenateInfoAndResource(byte[] info, byte[] resource) {
