@@ -14,7 +14,7 @@ public class UserRepository {
 
     public List<User> queryAll() {
         String sql = String.format("SELECT NAME, AGE FROM TT_USER");
-        return jdbcTemplate.query(sql, User.class);
+        return jdbcTemplate.queryList(sql, User.class);
     }
 
     public void addUser(User user) {

@@ -5,26 +5,35 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gson.Gson;
+
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Value;
+import tw.framework.michaelcore.mvc.annotation.Controller;
+import tw.framework.michaelcore.mvc.annotation.RequestBody;
 import tw.framework.michaelcore.mvc.annotation.RequestParam;
+import tw.framework.michaelcore.mvc.annotation.RestController;
 
 @Component
 public class RequestProcessor {
 
-    @Value
-    public String loggingPage;
+    @Autowired
+    public Gson gson;
 
     @Autowired
     public MvcCore mvcCore;
+
+    @Value
+    public String loggingPage;
 
     private String webRoot = "resources";
 
@@ -75,38 +84,55 @@ public class RequestProcessor {
         return null;
     }
 
-    private byte[] getResource(RequestInfo request) {
+    private byte[] getResource(RequestInfo requestInfo) {
         byte[] resource = null;
         try {
-            String requestPath = request.getRequestPath();
-            Map<String, String> requestParameters = null;
-            if ("GET".equals(request.getRequestMethod()) && requestPath.contains("?")) {
-                String[] pathAndParameters = requestPath.split("\\?");
-                requestPath = pathAndParameters[0];
-                requestParameters = getRequestParameters(pathAndParameters[1]);
-            } else if ("POST".equals(request.getRequestMethod()) && request.getRequestHeader().contains("Content-Type: application/x-www-form-urlencoded")) {
-                requestParameters = getRequestParameters(request.getRequestBody());
-            }
+            String requestMethod = requestInfo.getRequestMethod();
+            String requestPath = requestInfo.getRequestPath();
+            Map<String, Method> requestMapping = mvcCore.getRequestMapping().get(requestMethod);
+            Method mappingMethod = requestMapping.get(requestPath.split("\\?")[0]);
 
-            Map<String, Method> mapping = mvcCore.getRequestMapping().get(request.getRequestMethod());
-            Method mappingMethod = mapping.get(requestPath);
             if (mappingMethod != null) {
-                Object[] parameters = new Object[mappingMethod.getParameterCount()];
-                for (int i = 0; i < mappingMethod.getParameterCount(); i++) {
-                    if (mappingMethod.getParameters()[i].isAnnotationPresent(RequestParam.class)) {
-                        String key = mappingMethod.getParameters()[i].getAnnotation(RequestParam.class).value();
-                        String typeName = mappingMethod.getParameters()[i].getParameterizedType().getTypeName();
-                        parameters[i] = requestParameters.get(key);
-                        if ("int".equals(typeName)) {
-                            parameters[i] = Integer.parseInt((String) parameters[i]);
+                Object[] invokeParameters = new Object[mappingMethod.getParameterCount()];
+                if ("GET".equals(requestMethod)) {
+                    if (requestPath.contains("?")) {
+                        parameterStringToInvokeParameters(requestPath.split("\\?")[1], mappingMethod, invokeParameters);
+                    }
+                    Class<?> mappingClass = mappingMethod.getDeclaringClass();
+                    if (mappingClass.isAnnotationPresent(Controller.class)) {
+                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                        Model model = (Model) mappingMethod.invoke(controller, invokeParameters);
+                        resource = readAndProcessTemplate(model);
+                    }else if (mappingClass.isAnnotationPresent(RestController.class)) {
+                        jsonToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
+                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                        Object resultObject = mappingMethod.invoke(controller, invokeParameters);
+                        if (resultObject != null) {
+                            resource = gson.toJson(resultObject).getBytes();
+                        } else {
+                            resource = new String("Completed without error!").getBytes();
+                        }
+                    }
+                } else {
+                    Class<?> mappingClass = mappingMethod.getDeclaringClass();
+                    if (mappingClass.isAnnotationPresent(Controller.class)) {
+                        parameterStringToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
+                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                        Model model = (Model) mappingMethod.invoke(controller, invokeParameters);
+                        resource = readAndProcessTemplate(model);
+                    } else if (mappingClass.isAnnotationPresent(RestController.class)) {
+                        jsonToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
+                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                        Object resultObject = mappingMethod.invoke(controller, invokeParameters);
+                        if (resultObject != null) {
+                            resource = gson.toJson(resultObject).getBytes();
+                        } else {
+                            resource = new String("Completed without error!").getBytes();
                         }
                     }
                 }
-                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                Model model = (Model) mappingMethod.invoke(controller, parameters);
-                resource = readAndProcessTemplate(model);
             } else {
-                resource = Files.readAllBytes(Paths.get(webRoot, request.getRequestPath()));
+                resource = Files.readAllBytes(Paths.get(webRoot, requestPath));
             }
         } catch (Throwable e) {
             e.printStackTrace();
@@ -115,11 +141,34 @@ public class RequestProcessor {
         return resource;
     }
 
-    private Map<String, String> getRequestParameters(String parametersString) {
+    private void parameterStringToInvokeParameters(String parameterString, Method mappingMethod, Object[] invokeParameters) {
+        Map<String, String> requestParameters = getRequestParameters(parameterString);
+        for (int i = 0; i < mappingMethod.getParameterCount(); i++) {
+            if (mappingMethod.getParameters()[i].isAnnotationPresent(RequestParam.class)) {
+                String name = mappingMethod.getParameters()[i].getAnnotation(RequestParam.class).value();
+                invokeParameters[i] = requestParameters.get(name);
+                String type = mappingMethod.getParameters()[i].getParameterizedType().getTypeName();
+                if ("int".equals(type)) {
+                    invokeParameters[i] = Integer.parseInt((String) invokeParameters[i]);
+                }
+            }
+        }
+    }
+
+    private void jsonToInvokeParameters(String json, Method mappingMethod, Object[] invokeParameters) {
+        for (int i = 0; i < mappingMethod.getParameterCount(); i++) {
+            if (mappingMethod.getParameters()[i].isAnnotationPresent(RequestBody.class)) {
+                Type type = mappingMethod.getParameters()[i].getParameterizedType();
+                invokeParameters[i] = gson.fromJson(json, type);
+            }
+        }
+    }
+
+    private Map<String, String> getRequestParameters(String parameterString) {
         Map<String, String> requestParameters = null;
-        if (parametersString.length() > 0) {
+        if (parameterString.trim().length() > 0) {
             requestParameters = new HashMap<>();
-            for (String parameter : parametersString.split("&")) {
+            for (String parameter : parameterString.split("&")) {
                 String[] keyValue = parameter.split("=");
                 requestParameters.put(keyValue[0], keyValue[1]);
             }

@@ -125,10 +125,6 @@ public class Core {
         return CoreContext.addBean(clazz.getName(), clazz.newInstance());
     }
 
-    private static Object addBeanToContainer(Method method, Object instance) throws Exception {
-        return CoreContext.addBean(method.getName(), method.invoke(instance));
-    }
-
     private static Object addBeanToContainer(Class<?> interfazz, Object instance) throws Exception {
         return CoreContext.addBean(interfazz.getName(), instance);
     }
@@ -153,6 +149,10 @@ public class Core {
                 addBeanToContainer(method, instance);
             }
         }
+    }
+
+    private static Object addBeanToContainer(Method method, Object instance) throws Exception {
+        return CoreContext.addBean(method.getReturnType().getName(), method.invoke(instance));
     }
 
     private static void initializeAOP() throws Exception {

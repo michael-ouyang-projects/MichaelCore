@@ -7,17 +7,18 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHandler;
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
 
 @AopHandler
 public class TransactionalAop extends MichaelCoreAopHandler {
 
+    @Autowired
+    public BasicDataSource basicDataSource;
     private static ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
     private static ThreadLocal<Boolean> isCommit = new ThreadLocal<>();
 
     @Override
     public void before() {
-        BasicDataSource basicDataSource = CoreContext.getBean("basicDataSource", BasicDataSource.class);
         try {
             Connection connection = basicDataSource.getConnection();
             connection.setAutoCommit(false);

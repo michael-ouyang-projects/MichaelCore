@@ -13,16 +13,20 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import com.google.gson.Gson;
+
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Delete;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
 import tw.framework.michaelcore.mvc.annotation.Put;
+import tw.framework.michaelcore.mvc.annotation.RestController;
 
 @Configuration
 public class MvcCore {
@@ -52,6 +56,11 @@ public class MvcCore {
         }
     }
 
+    @Bean
+    public Gson createGson() {
+        return new Gson();
+    }
+
     @ExecuteAfterContainerStartup
     public void initializeMvcCore() {
         try {
@@ -68,7 +77,7 @@ public class MvcCore {
         requestMapping = createRequestMapping();
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
-            if (isControllerClass(clazz)) {
+            if (isControllerClass(clazz) || isRestControllerClass(clazz)) {
                 mapUrlToMethod(clazz);
             }
         }
@@ -89,6 +98,10 @@ public class MvcCore {
 
     private boolean isControllerClass(Class<?> clazz) {
         return clazz.isAnnotationPresent(Controller.class);
+    }
+
+    private boolean isRestControllerClass(Class<?> clazz) {
+        return clazz.isAnnotationPresent(RestController.class);
     }
 
     private void mapUrlToMethod(Class<?> clazz) {

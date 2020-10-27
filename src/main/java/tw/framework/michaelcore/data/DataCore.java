@@ -22,7 +22,7 @@ public class DataCore {
     public String driverClassName;
 
     @Bean
-    public BasicDataSource basicDataSource() {
+    public BasicDataSource createBasicDataSource() {
         BasicDataSource basicDataSource = new BasicDataSource();
         basicDataSource.setUrl(url);
         basicDataSource.setUsername(userName);

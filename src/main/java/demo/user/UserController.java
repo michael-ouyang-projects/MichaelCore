@@ -20,7 +20,7 @@ public class UserController {
         return new Model("index.html");
     }
 
-    @Get("/add")
+    @Get("/user/add")
     public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUser(new User(name, age));
         Model model = new Model("success.html");
@@ -29,7 +29,7 @@ public class UserController {
         return model;
     }
 
-    @Post("/add")
+    @Post("/user/add")
     @AopHere(SayHelloAop.class)
     public Model addUserByPost(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUser(new User(name, age));

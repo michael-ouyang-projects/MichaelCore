@@ -26,7 +26,7 @@ public class JdbcTemplate {
         return result;
     }
 
-    public <T> List<T> query(String sql, Class<T> clazz) {
+    public <T> List<T> queryList(String sql, Class<T> clazz) {
         List<T> resultList = new ArrayList<T>();
         Connection connection = TransactionalAop.getThreadConnection().get();
         try {

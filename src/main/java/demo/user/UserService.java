@@ -7,6 +7,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Service;
 
 @Service
+@Transactional
 public class UserService {
 
     @Autowired
@@ -16,7 +17,6 @@ public class UserService {
         return userRepository.queryAll();
     }
 
-    @Transactional
     public void addUser(User user) {
         userRepository.addUser(user);
     }
