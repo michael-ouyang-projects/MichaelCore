@@ -9,12 +9,12 @@ public class SayHelloAop {
 
     @Before
     public void before() {
-        System.out.println("Hello POST!");
+        System.out.println("Hello!");
     }
 
     @After
     public void after() {
-        System.out.println("GoodBye POST!");
+        System.out.println("GoodBye!");
     }
 
 }

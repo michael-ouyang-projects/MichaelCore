@@ -1,5 +1,8 @@
 package demo.user;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+
 import demo.aop.SayHelloAop;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
@@ -21,11 +24,14 @@ public class UserController {
     }
 
     @Get("/user/add")
-    public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) {
-        userService.addUser(new User(name, age));
+    public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) throws InterruptedException, ExecutionException {
+        System.out.println("1");
+        Future<String> result = userService.addUserAsync(new User(name, age));
+        System.out.println("2");
         Model model = new Model("success.html");
         model.add("name", name);
         model.add("age", age);
+        System.out.println(result.get());
         return model;
     }
 

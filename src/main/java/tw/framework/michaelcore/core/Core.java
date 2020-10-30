@@ -21,6 +21,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.MvcCore;
+import tw.framework.michaelcore.thread.annotation.Async;
 
 public class Core {
 
@@ -171,7 +172,7 @@ public class Core {
     }
 
     private static boolean aopOnClass(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class)) {
+        if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class) || clazz.isAnnotationPresent(Async.class)) {
             return true;
         }
         return false;
@@ -179,7 +180,7 @@ public class Core {
 
     private static boolean aopOnMethod(Class<?> clazz) {
         for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(AopHere.class) || method.isAnnotationPresent(Transactional.class)) {
+            if (method.isAnnotationPresent(AopHere.class) || method.isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Async.class)) {
                 return true;
             }
         }
