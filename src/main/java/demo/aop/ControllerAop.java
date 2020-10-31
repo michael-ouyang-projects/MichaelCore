@@ -5,7 +5,7 @@ import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
 
 @AopHandler
-public class TestCtrlAop {
+public class ControllerAop {
 
     @Before
     public void before() {

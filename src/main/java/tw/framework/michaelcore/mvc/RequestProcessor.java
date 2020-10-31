@@ -27,15 +27,10 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 public class RequestProcessor {
 
     @Autowired
-    public Gson gson;
-
-    @Autowired
-    public MvcCore mvcCore;
+    private Gson gson;
 
     @Value
-    public String loggingPage;
-
-    private String webRoot = "resources";
+    private String loggingPage;
 
     public RequestInfo getClientRequest(BufferedReader reader) throws IOException {
         StringBuilder requestHeader = new StringBuilder();
@@ -89,7 +84,7 @@ public class RequestProcessor {
         try {
             String requestMethod = requestInfo.getRequestMethod();
             String requestPath = requestInfo.getRequestPath();
-            Map<String, Method> requestMapping = mvcCore.getRequestMapping().get(requestMethod);
+            Map<String, Method> requestMapping = MvcCore.getRequestMapping().get(requestMethod);
             Method mappingMethod = requestMapping.get(requestPath.split("\\?")[0]);
 
             if (mappingMethod != null) {
@@ -132,7 +127,7 @@ public class RequestProcessor {
                     }
                 }
             } else {
-                resource = Files.readAllBytes(Paths.get(webRoot, requestPath));
+                resource = Files.readAllBytes(Paths.get("resources", requestPath));
             }
         } catch (Throwable e) {
             e.printStackTrace();
@@ -178,7 +173,7 @@ public class RequestProcessor {
 
     private byte[] readAndProcessTemplate(Model model) throws IOException {
         StringBuilder template = new StringBuilder();
-        Files.readAllLines(Paths.get(webRoot, "templates", model.getTemplate())).forEach(line -> {
+        Files.readAllLines(Paths.get("resources", "templates", model.getTemplate())).forEach(line -> {
             if (line.contains("${")) {
                 String[] variables = line.split("\\$\\{");
                 for (int i = 1; i < variables.length; i++) {
@@ -195,7 +190,6 @@ public class RequestProcessor {
         String infoFormat = "HTTP/1.1 200 OK"
                 + "Content-Length: %d"
                 + "Content-Type: %s\r\n\r\n";
-        // return String.format(infoFormat, resource.length, request.getContentType()).getBytes();
         return String.format(infoFormat, resource.length, "fe").getBytes();
     }
 

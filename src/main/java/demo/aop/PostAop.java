@@ -5,16 +5,16 @@ import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
 
 @AopHandler
-public class SayHelloAop {
+public class PostAop {
 
     @Before
     public void before() {
-        System.out.println("Hello POST!");
+        System.out.println("In POST!");
     }
 
     @After
     public void after() {
-        System.out.println("GoodBye POST!");
+        System.out.println("Out POST!");
     }
 
 }
