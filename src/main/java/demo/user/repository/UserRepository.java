@@ -1,7 +1,8 @@
-package demo.user;
+package demo.user.repository;
 
 import java.util.List;
 
+import demo.user.model.User;
 import tw.framework.michaelcore.data.JdbcTemplate;
 import tw.framework.michaelcore.data.annotation.Repository;
 import tw.framework.michaelcore.ioc.annotation.Autowired;

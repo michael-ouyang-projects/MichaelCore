@@ -1,6 +1,8 @@
-package demo.user;
+package demo.user.service;
 
 import java.util.List;
+
+import demo.user.model.User;
 
 public interface IUserService {
 

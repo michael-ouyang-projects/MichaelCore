@@ -1,4 +1,4 @@
-package demo.user;
+package demo.user.model;
 
 public class User {
 

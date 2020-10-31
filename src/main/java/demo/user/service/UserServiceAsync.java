@@ -1,7 +1,8 @@
-package demo.user;
+package demo.user.service;
 
 import java.util.List;
 
+import demo.user.model.User;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.annotation.Autowired;

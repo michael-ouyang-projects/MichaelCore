@@ -1,7 +1,10 @@
-package demo.user;
+package demo.user.controller;
 
 import java.util.List;
 
+import demo.user.model.User;
+import demo.user.service.IUserService;
+import demo.user.service.UserService;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
