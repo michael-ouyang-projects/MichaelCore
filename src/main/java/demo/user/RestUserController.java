@@ -11,8 +11,8 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 @RestController
 public class RestUserController {
 
-    @Autowired
-    private UserService userService;
+    @Autowired(UserService.class)
+    private IUserService userService;
 
     @Get("/api/users")
     public List<User> queryAll() {

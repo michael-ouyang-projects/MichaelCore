@@ -103,46 +103,31 @@ public class Core {
     private static void initializeIoC() throws Exception {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
-            if (isConfigurationClass(clazz)) {
-                addBeanToContainer(clazz);
-            } else if (Components.isComponentClass(clazz)) {
-                processComponentClass(clazz);
-            }
-        }
-    }
-
-    private static boolean isConfigurationClass(Class<?> clazz) {
-        return clazz.isAnnotationPresent(Configuration.class);
-    }
-    
-    private static Object addBeanToContainer(Class<?> clazz) throws Exception {
-    	Object bean = clazz.getDeclaredConstructor().newInstance();
-        CoreContext.addBean(clazz.getName(), bean);
-        return bean;
-    }
-
-    private static void processComponentClass(Class<?> clazz) throws Exception {
-        Object instance = addBeanToContainer(clazz);
-        for (Class<?> interfazz : clazz.getInterfaces()) {
-            directInterfacesToBean(interfazz, instance);
-        }
-    }
-
-    private static void directInterfacesToBean(Class<?> interfazz, Object instance) throws Exception {
-        CoreContext.addBean(interfazz.getName(), instance);
-    }
-    
-    private static void initializeValueProperties() throws Exception {
-        for (String fqcn : CoreContext.getFqcns()) {
-            Class<?> clazz = getClassByFqcn(fqcn);
             if (isManagedBean(clazz)) {
-                insertValue(clazz, CoreContext.getRealBean(clazz));
+                addBeanToContainer(clazz);
             }
         }
     }
     
     private static boolean isManagedBean(Class<?> clazz) {
         return isConfigurationClass(clazz) || Components.isComponentClass(clazz);
+    }
+
+    private static boolean isConfigurationClass(Class<?> clazz) {
+        return clazz.isAnnotationPresent(Configuration.class);
+    }
+    
+    private static void addBeanToContainer(Class<?> clazz) throws Exception {
+        CoreContext.addBean(clazz.getName(), clazz.getDeclaredConstructor().newInstance());
+    }
+    
+    private static void initializeValueProperties() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
+            Class<?> clazz = getClassByFqcn(fqcn);
+            if (isManagedBean(clazz)) {
+                insertValue(clazz, CoreContext.getBean(clazz));
+            }
+        }
     }
 
     private static void insertValue(Class<?> clazz, Object bean) throws Exception {
@@ -164,10 +149,10 @@ public class Core {
     }
 
     private static void processConfigurationClass(Class<?> clazz) throws Exception {
-        Object instance = CoreContext.getBean(clazz.getName());
+        Object configurationBean = CoreContext.getBean(clazz.getName());
         for (Method method : clazz.getMethods()) {
             if (isBeanMethod(method)) {
-                addBeanToContainer(method, instance);
+                addBeanToContainer(method, configurationBean);
             }
         }
     }
@@ -176,17 +161,15 @@ public class Core {
         return method.isAnnotationPresent(Bean.class);
     }
 
-    private static void addBeanToContainer(Method method, Object instance) throws Exception {
-        CoreContext.addBean(method.getReturnType().getName(), method.invoke(instance));
+    private static void addBeanToContainer(Method method, Object configurationBean) throws Exception {
+        CoreContext.addBean(method.getReturnType().getName(), method.invoke(configurationBean));
     }
 
     private static void initializeAOP() throws Exception {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (needToCreateProxy(clazz)) {
-                Object proxy = createProxy(clazz);
-                addProxyBeanToContainer(clazz, proxy);
-                redirectInterfacesToProxyBean(clazz, proxy);
+                addProxyBeanToContainer(clazz, createProxy(clazz));
             }
         }
     }
@@ -226,12 +209,6 @@ public class Core {
         CoreContext.addProxyBean(clazz.getName(), proxy);
     }
 
-    private static void redirectInterfacesToProxyBean(Class<?> clazz, Object proxy) {
-        for (Class<?> interfazz : clazz.getInterfaces()) {
-            CoreContext.addProxyBean(interfazz.getName(), proxy);
-        }
-    }
-
     private static void initializeAutowired() throws Exception {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
@@ -241,11 +218,16 @@ public class Core {
         }
     }
 
-    private static void autowireDependency(Class<?> clazz, Object bean) throws Exception {
+    private static void autowireDependency(Class<?> clazz, Object realBean) throws Exception {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Autowired.class)) {
             	field.setAccessible(true);
-                field.set(bean, CoreContext.getBean(field.getType()));
+            	Class<?> autowiredClazz = field.getAnnotation(Autowired.class).value();
+            	if(autowiredClazz.equals(Object.class)) {
+            		field.set(realBean, CoreContext.getBean(field.getType()));
+            	} else {
+            		field.set(realBean, CoreContext.getBean(autowiredClazz.getName()));
+            	}
             }
         }
     }
@@ -259,10 +241,10 @@ public class Core {
         }
     }
 
-    private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object bean) throws Exception {
+    private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object configurationBean) throws Exception {
         for (Method method : clazz.getMethods()) {
             if (method.isAnnotationPresent(ExecuteAfterContainerStartup.class)) {
-                method.invoke(bean);
+                method.invoke(configurationBean);
             }
         }
     }

@@ -1,7 +1,6 @@
 package demo.user;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 
 import demo.aop.ControllerAop;
 import demo.aop.PostAop;
@@ -17,8 +16,8 @@ import tw.framework.michaelcore.mvc.annotation.RequestParam;
 @AopHere(ControllerAop.class)
 public class UserController {
 
-    @Autowired
-    private UserService userService;
+    @Autowired(UserService.class)
+    private IUserService userService;
 
     @Get("/")
     public Model home() {
@@ -27,11 +26,10 @@ public class UserController {
 
     @Get("/user/add")
     public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) throws InterruptedException, ExecutionException {
-        Future<String> result = userService.addUserAsync(new User(name, age));
+        userService.addUser(new User(name, age));
         Model model = new Model("success.html");
         model.add("name", name);
         model.add("age", age);
-        System.out.println(result.get());
         return model;
     }
 
