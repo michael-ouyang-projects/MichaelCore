@@ -14,7 +14,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 public class TransactionalAop {
 
     @Autowired
-    public BasicDataSource basicDataSource;
+    private BasicDataSource basicDataSource;
     private static ThreadLocal<Connection> threadConnection = new ThreadLocal<>();
     private static ThreadLocal<Boolean> isCommit = new ThreadLocal<>();
 

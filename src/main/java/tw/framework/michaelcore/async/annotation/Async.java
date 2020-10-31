@@ -1,4 +1,4 @@
-package tw.framework.michaelcore.thread.annotation;
+package tw.framework.michaelcore.async.annotation;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;

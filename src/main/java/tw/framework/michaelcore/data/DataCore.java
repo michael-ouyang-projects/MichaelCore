@@ -10,16 +10,16 @@ import tw.framework.michaelcore.ioc.annotation.Value;
 public class DataCore {
 
     @Value
-    public String url;
+    private String url;
 
     @Value
-    public String userName;
+    private String userName;
 
     @Value
-    public String password;
+    private String password;
 
     @Value
-    public String driverClassName;
+    private String driverClassName;
 
     @Bean
     public BasicDataSource createBasicDataSource() {

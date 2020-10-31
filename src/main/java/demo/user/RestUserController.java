@@ -12,7 +12,7 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 public class RestUserController {
 
     @Autowired
-    public UserService userService;
+    private UserService userService;
 
     @Get("/api/users")
     public List<User> queryAll() {

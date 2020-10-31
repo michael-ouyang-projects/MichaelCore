@@ -10,7 +10,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 public class UserRepository {
 
     @Autowired
-    public JdbcTemplate jdbcTemplate;
+    private JdbcTemplate jdbcTemplate;
 
     public List<User> queryAll() {
         String sql = String.format("SELECT NAME, AGE FROM TT_USER");

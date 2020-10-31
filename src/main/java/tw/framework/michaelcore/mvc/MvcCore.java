@@ -32,18 +32,18 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 public class MvcCore {
 
     @Value
-    public String listeningPort;
+    private String listeningPort;
 
     @Value
-    public String welcomePage;
+    private String welcomePage;
 
     @Value
-    public String loggingPage;
+    private String loggingPage;
 
     @Autowired
-    public RequestProcessor requestProcessor;
+    private RequestProcessor requestProcessor;
 
-    private Map<String, Map<String, Method>> requestMapping;
+    private static Map<String, Map<String, Method>> requestMapping;
 
     public void startServer() {
         ExecutorService executor = Executors.newCachedThreadPool();
@@ -106,48 +106,16 @@ public class MvcCore {
 
     private void mapUrlToMethod(Class<?> clazz) {
         for (Method method : clazz.getMethods()) {
-            if (isGetMethod(method)) {
-                mapToGet(method);
-            } else if (isPostMethod(method)) {
-                mapToPost(method);
-            } else if (isPutMethod(method)) {
-                mapToPut(method);
-            } else if (isDeleteMethod(method)) {
-                mapToDelete(method);
+            if (method.isAnnotationPresent(Get.class)) {
+            	requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
+            } else if (method.isAnnotationPresent(Post.class)) {
+            	requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
+            } else if (method.isAnnotationPresent(Put.class)) {
+            	requestMapping.get("PUT").put(method.getAnnotation(Put.class).value(), method);
+            } else if (method.isAnnotationPresent(Delete.class)) {
+            	requestMapping.get("DELETE").put(method.getAnnotation(Delete.class).value(), method);
             }
         }
-    }
-
-    private boolean isGetMethod(Method method) {
-        return method.isAnnotationPresent(Get.class);
-    }
-
-    private boolean isPostMethod(Method method) {
-        return method.isAnnotationPresent(Post.class);
-    }
-
-    private boolean isPutMethod(Method method) {
-        return method.isAnnotationPresent(Put.class);
-    }
-
-    private boolean isDeleteMethod(Method method) {
-        return method.isAnnotationPresent(Delete.class);
-    }
-
-    private void mapToGet(Method method) {
-        requestMapping.get("GET").put(method.getAnnotation(Get.class).value(), method);
-    }
-
-    private void mapToPost(Method method) {
-        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
-    }
-
-    private void mapToPut(Method method) {
-        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
-    }
-
-    private void mapToDelete(Method method) {
-        requestMapping.get("POST").put(method.getAnnotation(Post.class).value(), method);
     }
 
     private void createNecessaryDirectories() throws IOException {
@@ -192,7 +160,7 @@ public class MvcCore {
         }
     }
 
-    public Map<String, Map<String, Method>> getRequestMapping() {
+    public static Map<String, Map<String, Method>> getRequestMapping() {
         return requestMapping;
     }
 

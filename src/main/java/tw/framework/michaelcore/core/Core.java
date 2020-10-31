@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
+import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.data.annotation.Transactional;
@@ -21,14 +22,13 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.MvcCore;
-import tw.framework.michaelcore.thread.annotation.Async;
 
 public class Core {
 
     static {
         try {
-            putPropertiesToContainer();
-            putFqcnsToContainer();
+            readPropertiesToContainer();
+            readFqcnsToContainer();
         } catch (Exception e) {
             System.err.println("Core Initial Error!");
             e.printStackTrace();
@@ -54,7 +54,7 @@ public class Core {
         }
     }
 
-    private static void putPropertiesToContainer() throws IOException {
+    private static void readPropertiesToContainer() throws IOException {
         List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
         properties.forEach(property -> {
             if (property.trim().length() > 0) {
@@ -64,7 +64,7 @@ public class Core {
         });
     }
 
-    private static void putFqcnsToContainer() throws IOException {
+    private static void readFqcnsToContainer() throws IOException {
         String applicationPath = getApplicationPath();
         List<String> fqcns = Files.walk(Paths.get(applicationPath))
                 .filter(Files::isRegularFile)
@@ -83,7 +83,7 @@ public class Core {
     }
 
     private static boolean notInDefaultPackage(Path file, String applicationPath) {
-        return file.getParent().toString().replaceAll("\\\\", "/").split(applicationPath).length == 2;
+        return file.getParent().toString().replace("\\", "/").split(applicationPath).length == 2;
     }
 
     private static boolean isClassFile(Path file) {
@@ -91,7 +91,7 @@ public class Core {
     }
 
     private static String toFqcn(Path classFile, String applicationPath) {
-        String packageName = classFile.getParent().toString().replaceAll("\\\\", "/").split(applicationPath)[1].replace("/", ".");
+        String packageName = classFile.getParent().toString().replace("\\", "/").split(applicationPath)[1].replace("/", ".");
         String className = classFile.getFileName().toString().split("\\.class")[0];
         return String.format("%s.%s", packageName, className);
     }
@@ -114,24 +114,44 @@ public class Core {
     private static boolean isConfigurationClass(Class<?> clazz) {
         return clazz.isAnnotationPresent(Configuration.class);
     }
+    
+    private static Object addBeanToContainer(Class<?> clazz) throws Exception {
+    	Object bean = clazz.getDeclaredConstructor().newInstance();
+        CoreContext.addBean(clazz.getName(), bean);
+        return bean;
+    }
 
     private static void processComponentClass(Class<?> clazz) throws Exception {
         Object instance = addBeanToContainer(clazz);
         for (Class<?> interfazz : clazz.getInterfaces()) {
-            addBeanToContainer(interfazz, instance);
+            directInterfacesToBean(interfazz, instance);
         }
     }
 
-    private static Object addBeanToContainer(Class<?> clazz) throws Exception {
-        return CoreContext.addBean(clazz.getName(), clazz.newInstance());
+    private static void directInterfacesToBean(Class<?> interfazz, Object instance) throws Exception {
+        CoreContext.addBean(interfazz.getName(), instance);
+    }
+    
+    private static void initializeValueProperties() throws Exception {
+        for (String fqcn : CoreContext.getFqcns()) {
+            Class<?> clazz = getClassByFqcn(fqcn);
+            if (isManagedBean(clazz)) {
+                insertValue(clazz, CoreContext.getRealBean(clazz));
+            }
+        }
+    }
+    
+    private static boolean isManagedBean(Class<?> clazz) {
+        return isConfigurationClass(clazz) || Components.isComponentClass(clazz);
     }
 
-    private static Object addBeanToContainer(Class<?> interfazz, Object instance) throws Exception {
-        return CoreContext.addBean(interfazz.getName(), instance);
-    }
-
-    private static boolean isBeanMethod(Method method) {
-        return method.isAnnotationPresent(Bean.class);
+    private static void insertValue(Class<?> clazz, Object bean) throws Exception {
+        for (Field field : clazz.getDeclaredFields()) {
+            if (field.isAnnotationPresent(Value.class)) {
+            	field.setAccessible(true);
+                field.set(bean, CoreContext.getProperties(field.getName()));
+            }
+        }
     }
 
     private static void initializeIoCForBean() throws Exception {
@@ -151,9 +171,13 @@ public class Core {
             }
         }
     }
+    
+    private static boolean isBeanMethod(Method method) {
+        return method.isAnnotationPresent(Bean.class);
+    }
 
-    private static Object addBeanToContainer(Method method, Object instance) throws Exception {
-        return CoreContext.addBean(method.getReturnType().getName(), method.invoke(instance));
+    private static void addBeanToContainer(Method method, Object instance) throws Exception {
+        CoreContext.addBean(method.getReturnType().getName(), method.invoke(instance));
     }
 
     private static void initializeAOP() throws Exception {
@@ -198,8 +222,8 @@ public class Core {
         return CoreContext.getBean(MichaelCoreAopHandler.class);
     }
 
-    private static Object addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {
-        return CoreContext.addProxyBean(clazz.getName(), proxy);
+    private static void addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {
+        CoreContext.addProxyBean(clazz.getName(), proxy);
     }
 
     private static void redirectInterfacesToProxyBean(Class<?> clazz, Object proxy) {
@@ -217,31 +241,11 @@ public class Core {
         }
     }
 
-    private static boolean isManagedBean(Class<?> clazz) {
-        return isConfigurationClass(clazz) || Components.isComponentClass(clazz);
-    }
-
     private static void autowireDependency(Class<?> clazz, Object bean) throws Exception {
-        for (Field field : clazz.getFields()) {
+        for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Autowired.class)) {
+            	field.setAccessible(true);
                 field.set(bean, CoreContext.getBean(field.getType()));
-            }
-        }
-    }
-
-    private static void initializeValueProperties() throws Exception {
-        for (String fqcn : CoreContext.getFqcns()) {
-            Class<?> clazz = getClassByFqcn(fqcn);
-            if (isManagedBean(clazz)) {
-                insertValue(clazz, CoreContext.getRealBean(clazz));
-            }
-        }
-    }
-
-    private static void insertValue(Class<?> clazz, Object bean) throws Exception {
-        for (Field field : clazz.getFields()) {
-            if (field.isAnnotationPresent(Value.class)) {
-                field.set(bean, CoreContext.getProperties(field.getName()));
             }
         }
     }
