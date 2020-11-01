@@ -10,4 +10,6 @@ public interface IUserService {
 
     public void addUser(User user);
     
+    public void testInnerMethodCall();
+    
 }

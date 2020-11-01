@@ -2,7 +2,9 @@ package demo.user.service;
 
 import java.util.List;
 
+import demo.aop.TestInnerMethodCallAop;
 import demo.user.model.User;
+import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
@@ -26,7 +28,13 @@ public class UserServiceAsync implements IUserService {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    	testInnerMethodCall();
     	userService.addUser(user);
     }
+
+    @AopHere(TestInnerMethodCallAop.class)
+	public void testInnerMethodCall() {
+		System.out.println("Inner Method Call~");
+	}
 	
 }
