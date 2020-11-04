@@ -11,7 +11,7 @@ import tw.framework.michaelcore.ioc.annotation.Bean;
 @Configuration
 public class TestingEntry {
 
-    @Bean(scope = BeanScope.PROTOTYPE, value = "testBean")
+    @Bean(value = "testBean", scope = BeanScope.PROTOTYPE)
     public TestBean testBean() {
         return new TestBean();
     }

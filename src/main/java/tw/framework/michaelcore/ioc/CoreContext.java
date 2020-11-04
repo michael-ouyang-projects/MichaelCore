@@ -63,6 +63,14 @@ public class CoreContext {
         return clazz.cast(bean);
     }
 
+    public static Object getRealBean(String name) {
+        Object bean = beanFactory.get(name);
+        if (isProxy(bean)) {
+            bean = beanFactory.get(name + ".real");
+        }
+        return bean;
+    }
+
     public static Object getRealBean(Class<?> clazz) {
         Object bean = beanFactory.get(clazz.getName());
         if (isProxy(bean)) {
