@@ -11,6 +11,7 @@ public class CoreContext {
     private static List<String> fqcns;
     private final static Map<String, String> properties = new HashMap<>();
     private final static Map<String, Object> beanFactory = new HashMap<>();
+    private final static Map<String, Object> realBeans = new HashMap<>();
 
     public static List<String> getFqcns() {
         return fqcns;
@@ -30,51 +31,25 @@ public class CoreContext {
         }
     }
 
+    public static <T> T getBean(Class<T> clazz) {
+        return clazz.cast(getBean(clazz.getName()));
+    }
+
+    public static <T> T getBean(String name, Class<T> clazz) {
+        return clazz.cast(getBean(name));
+    }
+
     @SuppressWarnings("unchecked")
     public static Object getBean(String name) {
         Object bean = beanFactory.get(name);
-        if (isConstructor(bean)) {
-            bean = createPrototypeComponentByConstructor((Constructor<Object>) bean);
-        } else if (isMethod(bean)) {
-            bean = createPrototypeBeanByMethod((Method) bean);
-        }
-        return bean;
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> T getBean(Class<T> clazz) {
-        Object bean = beanFactory.get(clazz.getName());
-        if (isConstructor(bean)) {
-            bean = createPrototypeComponentByConstructor((Constructor<Object>) bean);
-        } else if (isMethod(bean)) {
-            bean = createPrototypeBeanByMethod((Method) bean);
-        }
-        return clazz.cast(bean);
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> T getBean(String name, Class<T> clazz) {
-        Object bean = beanFactory.get(name);
-        if (isConstructor(bean)) {
-            bean = createPrototypeComponentByConstructor((Constructor<Object>) bean);
-        } else if (isMethod(bean)) {
-            bean = createPrototypeBeanByMethod((Method) bean);
-        }
-        return clazz.cast(bean);
-    }
-
-    public static Object getRealBean(String name) {
-        Object bean = beanFactory.get(name);
-        if (isProxy(bean)) {
-            bean = beanFactory.get(name + ".real");
-        }
-        return bean;
-    }
-
-    public static Object getRealBean(Class<?> clazz) {
-        Object bean = beanFactory.get(clazz.getName());
-        if (isProxy(bean)) {
-            bean = beanFactory.get(clazz.getName() + ".real");
+        try {
+            if (isConstructor(bean)) {
+                bean = createPrototypeComponentByConstructor((Constructor<Object>) bean);
+            } else if (isMethod(bean)) {
+                bean = createPrototypeBeanByMethod((Method) bean);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return bean;
     }
@@ -87,29 +62,28 @@ public class CoreContext {
         return bean.getClass().equals(Method.class);
     }
 
+    private static Object createPrototypeComponentByConstructor(Constructor<Object> constructor) throws Exception {
+        return constructor.newInstance();
+    }
+
+    private static Object createPrototypeBeanByMethod(Method method) throws Exception {
+        return method.invoke(beanFactory.get(method.getDeclaringClass().getName()));
+    }
+
+    public static Object getRealBean(Class<?> clazz) {
+        return getRealBean(clazz.getName());
+    }
+
+    public static Object getRealBean(String name) {
+        Object bean = beanFactory.get(name);
+        if (isProxy(bean)) {
+            bean = realBeans.get(bean.getClass().getName());
+        }
+        return bean;
+    }
+
     private static boolean isProxy(Object bean) {
         return bean.getClass().getName().contains("$$EnhancerByCGLIB$$");
-    }
-
-    private static Object createPrototypeComponentByConstructor(Constructor<Object> constructor) {
-        Object bean = null;
-        try {
-            bean = constructor.newInstance();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return bean;
-    }
-
-    private static Object createPrototypeBeanByMethod(Method method) {
-        Object bean = null;
-        Object configurationClazz = beanFactory.get(method.getDeclaringClass().getName());
-        try {
-            bean = method.invoke(configurationClazz);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return bean;
     }
 
     public static void addBean(String name, Object object) {
@@ -125,7 +99,7 @@ public class CoreContext {
     public static void addProxyBean(String name, Object object) {
         if (object != null) {
             Object realBean = beanFactory.put(name, object);
-            beanFactory.put(name + ".real", realBean);
+            realBeans.put(object.getClass().getName(), realBean);
         }
     }
 

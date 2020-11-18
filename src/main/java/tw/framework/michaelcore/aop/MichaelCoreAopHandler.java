@@ -22,7 +22,8 @@ public class MichaelCoreAopHandler implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         boolean isSync = true;
         Object result = null;
-        Class<?> realClass = getRealClass(method);
+        String className = proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0];
+        Class<?> realClass = Class.forName(className);
         List<Object> aopHandlers = new ArrayList<>();
 
         if (asyncOnClass(realClass)) {
@@ -68,7 +69,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
                     }
                 }
             }
-            result = method.invoke(CoreContext.getBean(method.getDeclaringClass().getName() + ".real"), args);
+            result = method.invoke(CoreContext.getRealBean(className), args);
             for (int i = aopHandlers.size() - 1; i >= 0; i--) {
                 Class<?> handlerClass = aopHandlers.get(i).getClass();
                 for (Method handlerMethod : handlerClass.getMethods()) {
@@ -87,10 +88,6 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         }
 
         return result;
-    }
-
-    private Class<?> getRealClass(Method method) {
-        return CoreContext.getBean(method.getDeclaringClass().getName() + ".real").getClass();
     }
 
     private boolean asyncOnClass(Class<?> realClass) {

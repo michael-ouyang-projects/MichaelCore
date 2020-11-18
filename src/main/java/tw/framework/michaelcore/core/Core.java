@@ -112,7 +112,7 @@ public class Core {
     }
 
     private static boolean isManagedBeanClass(Class<?> clazz) {
-        return isConfigurationClass(clazz) || Components.isComponentClass(clazz);
+        return isConfigurationClass(clazz) || Components.isComponentsClass(clazz);
     }
 
     private static boolean isConfigurationClass(Class<?> clazz) {
@@ -242,7 +242,7 @@ public class Core {
     }
 
     private static boolean needToCreateProxy(Class<?> clazz) {
-        return Components.isComponentClass(clazz) && isSingletonBean(clazz) && (aopOnClass(clazz) || aopOnMethod(clazz));
+        return Components.isComponentsClass(clazz) && isSingletonBean(clazz) && (aopOnClass(clazz) || aopOnMethod(clazz));
     }
 
     private static boolean aopOnClass(Class<?> clazz) {
@@ -265,7 +265,8 @@ public class Core {
         Enhancer enhancer = new Enhancer();
         enhancer.setSuperclass(clazz);
         enhancer.setCallback(getAopHandler());
-        return enhancer.create();
+        Object object = enhancer.create();
+        return object;
     }
 
     private static MichaelCoreAopHandler getAopHandler() {

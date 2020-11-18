@@ -23,7 +23,7 @@ public enum Components {
         return componentClass;
     }
 
-    public static boolean isComponentClass(Class<?> clazz) {
+    public static boolean isComponentsClass(Class<?> clazz) {
         for (Components component : values()) {
             if (clazz.isAnnotationPresent(component.getClazz())) {
                 return true;

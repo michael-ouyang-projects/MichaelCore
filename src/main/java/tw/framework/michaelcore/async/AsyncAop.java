@@ -12,6 +12,7 @@ import tw.framework.michaelcore.ioc.CoreContext;
 @AopHandler
 public class AsyncAop {
 
+    @SuppressWarnings("unchecked")
     public CompletableFuture<Object> runAsync(List<Object> aopHandlers, Method method, Object[] args) {
         CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
             Object returningObject = null;
