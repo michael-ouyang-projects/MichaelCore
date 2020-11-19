@@ -17,6 +17,7 @@ public class UserService implements IUserService {
     @Autowired
     private UserRepository userRepository;
 
+    @Transactional
     public List<User> queryAll() {
         return userRepository.queryAll();
     }

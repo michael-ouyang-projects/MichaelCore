@@ -17,7 +17,7 @@ public class TestingEntry {
     }
 
     @ExecuteAfterContextStartup
-    public void run() throws InterruptedException {
+    public void testIoC() throws InterruptedException {
         TestBean bean1 = CoreContext.getBean("testBean", TestBean.class);
         TestBean bean2 = CoreContext.getBean("testBean", TestBean.class);
         bean1.setName("first");
@@ -39,8 +39,15 @@ public class TestingEntry {
         } else {
             System.out.println("different component!");
         }
-        component1.showDate();
-        component2.showDate();
+        component1.showInfo();
+        component2.showInfo();
+        System.out.println();
+    }
+
+    @ExecuteAfterContextStartup
+    public void testAop() throws InterruptedException {
+        TestComponent testComponent = CoreContext.getBean("testComponent", TestComponent.class);
+        System.out.println(testComponent.queryAll() + "\n");
     }
 
 }

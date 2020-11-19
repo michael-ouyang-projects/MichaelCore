@@ -1,15 +1,15 @@
 package demo.test;
 
 import java.util.Date;
+import java.util.List;
 
-import demo.user.service.IUserService;
-import demo.user.service.UserService;
+import demo.user.controller.RestUserController;
+import demo.user.model.User;
 import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
-import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 
-@Component(value = "testComponent", scope = BeanScope.PROTOTYPE)
+@Component(value = "testComponent")
 public class TestComponent {
 
     private Date date;
@@ -17,16 +17,20 @@ public class TestComponent {
     @Value
     private String test;
 
-    @Autowired(UserService.class)
-    private IUserService userService;
+    @Autowired
+    private RestUserController userController;
 
-    public void showDate() {
+    public void showInfo() {
         System.out.println(test + " + " + date);
-        System.out.println(userService);
+        System.out.println(userController);
     }
 
     public void setDate(Date date) {
         this.date = date;
+    }
+
+    public List<User> queryAll() {
+        return userController.queryAll();
     }
 
 }
