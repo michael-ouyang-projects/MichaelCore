@@ -1,6 +1,6 @@
 package tw.framework.michaelcore.aop;
 
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.core.CoreContext;
 
 public class AopHelper {
 

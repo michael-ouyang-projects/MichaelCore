@@ -15,9 +15,9 @@ import java.util.concurrent.Executors;
 
 import com.google.gson.Gson;
 
+import tw.framework.michaelcore.core.CoreContext;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
-import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Value;

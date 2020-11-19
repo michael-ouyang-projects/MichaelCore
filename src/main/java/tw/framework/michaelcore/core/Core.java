@@ -18,7 +18,6 @@ import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.BeanScope;
 import tw.framework.michaelcore.ioc.Components;
-import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
@@ -122,7 +121,7 @@ public class Core {
     private static void processIoC(Class<?> clazz) throws Exception {
         if (isComponentClass(clazz)) {
             Component component = clazz.getAnnotation(Component.class);
-            processComponent(component, getComponentBeanName(component, clazz), clazz);
+            processComponentClass(component, getComponentBeanName(component, clazz), clazz);
         } else {
             addBeanToContainer(clazz);
         }
@@ -136,7 +135,7 @@ public class Core {
         return "".equals(component.value()) ? clazz.getName() : component.value();
     }
 
-    private static void processComponent(Component component, String componentName, Class<?> clazz) throws Exception {
+    private static void processComponentClass(Component component, String componentName, Class<?> clazz) throws Exception {
         if (component.scope().equals(BeanScope.SINGLETON)) {
             addBeanToContainer(componentName, clazz);
         } else if (component.scope().equals(BeanScope.PROTOTYPE)) {
@@ -160,7 +159,7 @@ public class Core {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
-                insertValue(clazz, CoreContext.getBean(getBeanName(clazz)));
+                insertValueToBean(clazz, CoreContext.getBean(getBeanName(clazz)));
             }
         }
     }
@@ -180,7 +179,7 @@ public class Core {
         return beanName;
     }
 
-    private static void insertValue(Class<?> clazz, Object bean) throws Exception {
+    static void insertValueToBean(Class<?> clazz, Object bean) throws Exception {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Value.class)) {
                 field.setAccessible(true);
@@ -245,14 +244,14 @@ public class Core {
         return Components.isComponentsClass(clazz) && isSingletonBean(clazz) && (aopOnClass(clazz) || aopOnMethod(clazz));
     }
 
-    private static boolean aopOnClass(Class<?> clazz) {
+    static boolean aopOnClass(Class<?> clazz) {
         if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class) || clazz.isAnnotationPresent(Async.class)) {
             return true;
         }
         return false;
     }
 
-    private static boolean aopOnMethod(Class<?> clazz) {
+    static boolean aopOnMethod(Class<?> clazz) {
         for (Method method : clazz.getMethods()) {
             if (method.isAnnotationPresent(AopHere.class) || method.isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Async.class)) {
                 return true;
@@ -261,7 +260,7 @@ public class Core {
         return false;
     }
 
-    private static Object createProxy(Class<?> clazz) {
+    static Object createProxy(Class<?> clazz) {
         Enhancer enhancer = new Enhancer();
         enhancer.setSuperclass(clazz);
         enhancer.setCallback(getAopHandler());
@@ -286,7 +285,7 @@ public class Core {
         }
     }
 
-    private static void autowireDependencies(Class<?> clazz, Object realBean) throws Exception {
+    static void autowireDependencies(Class<?> clazz, Object realBean) throws Exception {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Autowired.class)) {
                 field.setAccessible(true);

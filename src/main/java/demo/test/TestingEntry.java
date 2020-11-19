@@ -2,10 +2,10 @@ package demo.test;
 
 import java.util.Date;
 
+import tw.framework.michaelcore.core.CoreContext;
 import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
 import tw.framework.michaelcore.ioc.BeanScope;
-import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 
 @Configuration
@@ -25,7 +25,7 @@ public class TestingEntry {
         if (bean1 == bean2) {
             System.out.println("same bean!");
         } else {
-            System.out.println("difference bean!");
+            System.out.println("different bean!");
         }
         System.out.println(String.format("Bean1: %s, Bean2: %s\n", bean1.getName(), bean2.getName()));
 
@@ -37,11 +37,10 @@ public class TestingEntry {
         if (component1 == component2) {
             System.out.println("same component!");
         } else {
-            System.out.println("difference component!");
+            System.out.println("different component!");
         }
-        component1.sayHello();
-        System.out.println("-------------------------------------");
-        component2.sayHello();
+        component1.showDate();
+        component2.showDate();
     }
 
 }
