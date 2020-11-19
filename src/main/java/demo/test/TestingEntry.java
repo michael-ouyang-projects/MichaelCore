@@ -4,7 +4,7 @@ import java.util.Date;
 
 import tw.framework.michaelcore.core.CoreContext;
 import tw.framework.michaelcore.core.annotation.Configuration;
-import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
+import tw.framework.michaelcore.core.annotation.ExecuteAfterContextStartup;
 import tw.framework.michaelcore.ioc.BeanScope;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 
@@ -16,7 +16,7 @@ public class TestingEntry {
         return new TestBean();
     }
 
-    @ExecuteAfterContainerStartup
+    @ExecuteAfterContextStartup
     public void run() throws InterruptedException {
         TestBean bean1 = CoreContext.getBean("testBean", TestBean.class);
         TestBean bean2 = CoreContext.getBean("testBean", TestBean.class);

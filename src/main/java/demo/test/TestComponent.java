@@ -4,10 +4,10 @@ import java.util.Date;
 
 import demo.user.service.IUserService;
 import demo.user.service.UserService;
+import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.ioc.BeanScope;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
-import tw.framework.michaelcore.ioc.annotation.Value;
 
 @Component(value = "testComponent", scope = BeanScope.PROTOTYPE)
 public class TestComponent {

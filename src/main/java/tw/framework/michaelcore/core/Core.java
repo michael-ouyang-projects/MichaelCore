@@ -14,14 +14,14 @@ import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.core.annotation.Configuration;
-import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
+import tw.framework.michaelcore.core.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.BeanScope;
 import tw.framework.michaelcore.ioc.Components;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
-import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.MvcCore;
 
 public class Core {
@@ -314,7 +314,7 @@ public class Core {
 
     private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object configurationBean) throws Exception {
         for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(ExecuteAfterContainerStartup.class)) {
+            if (method.isAnnotationPresent(ExecuteAfterContextStartup.class)) {
                 method.invoke(configurationBean);
             }
         }

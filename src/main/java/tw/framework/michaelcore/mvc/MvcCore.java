@@ -17,10 +17,10 @@ import com.google.gson.Gson;
 
 import tw.framework.michaelcore.core.CoreContext;
 import tw.framework.michaelcore.core.annotation.Configuration;
-import tw.framework.michaelcore.core.annotation.ExecuteAfterContainerStartup;
+import tw.framework.michaelcore.core.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Delete;
 import tw.framework.michaelcore.mvc.annotation.Get;
@@ -61,7 +61,7 @@ public class MvcCore {
         return new Gson();
     }
 
-    @ExecuteAfterContainerStartup
+    @ExecuteAfterContextStartup
     public void initializeMvcCore() {
         try {
             initializeRequestMapping();

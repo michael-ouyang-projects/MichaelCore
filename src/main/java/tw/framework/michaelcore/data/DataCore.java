@@ -3,8 +3,8 @@ package tw.framework.michaelcore.data;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import tw.framework.michaelcore.core.annotation.Configuration;
+import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Value;
 
 @Configuration
 public class DataCore {
