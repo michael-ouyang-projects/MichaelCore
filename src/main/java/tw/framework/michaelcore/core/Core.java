@@ -17,11 +17,11 @@ import tw.framework.michaelcore.core.annotation.Configuration;
 import tw.framework.michaelcore.core.annotation.ExecuteAfterContextStartup;
 import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.data.annotation.Transactional;
-import tw.framework.michaelcore.ioc.BeanScope;
-import tw.framework.michaelcore.ioc.Components;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.enumeration.BeanScope;
+import tw.framework.michaelcore.ioc.enumeration.Components;
 import tw.framework.michaelcore.mvc.MvcCore;
 
 public class Core {
