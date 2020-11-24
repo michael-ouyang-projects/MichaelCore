@@ -23,6 +23,7 @@ import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 import tw.framework.michaelcore.ioc.enumeration.Components;
 import tw.framework.michaelcore.mvc.MvcCore;
+import tw.framework.michaelcore.utils.MultiValueTreeMap;
 
 public class Core {
 
@@ -297,7 +298,12 @@ public class Core {
     private static void doAutowired(Field field, Object realBean) throws Exception {
         Class<?> autowiredClazz = field.getAnnotation(Autowired.class).value();
         if (autowiredClazz.equals(Object.class)) {
-            field.set(realBean, CoreContext.getBean(getBeanName(field.getType())));
+            String beanName = field.getAnnotation(Autowired.class).name();
+            if ("".equals(beanName)) {
+                field.set(realBean, CoreContext.getBean(getBeanName(field.getType())));
+            } else {
+                field.set(realBean, CoreContext.getBean(beanName));
+            }
         } else {
             field.set(realBean, CoreContext.getBean(getBeanName(autowiredClazz)));
         }
@@ -313,8 +319,18 @@ public class Core {
     }
 
     private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object configurationBean) throws Exception {
+        MultiValueTreeMap<Integer, Method> map = null;
         for (Method method : clazz.getMethods()) {
             if (method.isAnnotationPresent(ExecuteAfterContextStartup.class)) {
+                if (map == null) {
+                    map = new MultiValueTreeMap<>();
+                }
+                map.put(method.getAnnotation(ExecuteAfterContextStartup.class).order(), method);
+            }
+        }
+
+        if (map != null) {
+            for (Method method : map.getAllByOrder()) {
                 method.invoke(configurationBean);
             }
         }

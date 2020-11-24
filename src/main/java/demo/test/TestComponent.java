@@ -17,12 +17,15 @@ public class TestComponent {
     @Value
     private String test;
 
+    @Autowired(name = "testBeanSingleton")
+    private TestBean testBean;
+
     @Autowired
     private RestUserController userController;
 
     public void showInfo() {
-        System.out.println(test + " + " + date);
-        System.out.println(userController);
+        System.out.println(test + ", " + date);
+        System.out.println(testBean.getName());
     }
 
     public void setDate(Date date) {

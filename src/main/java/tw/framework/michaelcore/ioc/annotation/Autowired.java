@@ -10,6 +10,8 @@ import java.lang.annotation.Target;
 @Target(FIELD)
 public @interface Autowired {
 
-	public Class<?> value() default Object.class;
-	
+    public Class<?> value() default Object.class;
+
+    public String name() default "";
+
 }

@@ -11,15 +11,22 @@ import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 @Configuration
 public class TestingEntry {
 
-    @Bean(value = "testBean", scope = BeanScope.PROTOTYPE)
-    public TestBean testBean() {
+    @Bean(value = "testBeanSingleton", scope = BeanScope.SINGLETON)
+    public TestBean testBeanSingleton() {
+        TestBean testBean = new TestBean();
+        testBean.setName("Singleton TestBean");
+        return testBean;
+    }
+
+    @Bean(value = "testBeanPrototype", scope = BeanScope.PROTOTYPE)
+    public TestBean testBeanPrototype() {
         return new TestBean();
     }
 
-    @ExecuteAfterContextStartup
+    @ExecuteAfterContextStartup(order = 1)
     public void testIoC() throws InterruptedException {
-        TestBean bean1 = CoreContext.getBean("testBean", TestBean.class);
-        TestBean bean2 = CoreContext.getBean("testBean", TestBean.class);
+        TestBean bean1 = CoreContext.getBean("testBeanPrototype", TestBean.class);
+        TestBean bean2 = CoreContext.getBean("testBeanPrototype", TestBean.class);
         bean1.setName("first");
         bean2.setName("second");
         if (bean1 == bean2) {
@@ -44,7 +51,7 @@ public class TestingEntry {
         System.out.println();
     }
 
-    @ExecuteAfterContextStartup
+    @ExecuteAfterContextStartup(order = 2)
     public void testAop() throws InterruptedException {
         TestComponent testComponent = CoreContext.getBean("testComponent", TestComponent.class);
         System.out.println(testComponent.queryAll() + "\n");
