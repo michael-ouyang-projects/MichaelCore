@@ -13,11 +13,11 @@ import tw.framework.michaelcore.core.CoreContext;
 public class AsyncAop {
 
     @SuppressWarnings("unchecked")
-    public CompletableFuture<Object> runAsync(List<Object> aopHandlers, Method method, Object[] args) {
+    public CompletableFuture<Object> invokeAsync(List<Object> aopHandlers, Method method, Object[] args) {
         CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
             Object returningObject = null;
             try {
-                for (int i = 1; i < aopHandlers.size(); i++) {
+                for (int i = 0; i < aopHandlers.size(); i++) {
                     Class<?> handlerClass = aopHandlers.get(i).getClass();
                     for (Method handlerMethod : handlerClass.getMethods()) {
                         if (handlerMethod.isAnnotationPresent(Before.class)) {
@@ -25,8 +25,9 @@ public class AsyncAop {
                         }
                     }
                 }
-                returningObject = method.invoke(CoreContext.getBean(method.getDeclaringClass().getName() + ".real"), args);
-                for (int i = aopHandlers.size() - 1; i >= 1; i--) {
+                System.out.println(Thread.currentThread().getName());
+                returningObject = method.invoke(CoreContext.getRealBean(method.getDeclaringClass()), args);
+                for (int i = aopHandlers.size() - 1; i >= 0; i--) {
                     Class<?> handlerClass = aopHandlers.get(i).getClass();
                     for (Method handlerMethod : handlerClass.getMethods()) {
                         if (handlerMethod.isAnnotationPresent(After.class)) {

@@ -52,9 +52,10 @@ public class TestingEntry {
     }
 
     @ExecuteAfterContextStartup(order = 2)
-    public void testAop() throws InterruptedException {
+    public void testAop() throws Exception {
         TestComponent testComponent = CoreContext.getBean("testComponent", TestComponent.class);
-        System.out.println(testComponent.queryAll() + "\n");
+        System.out.println(testComponent.getClass().getName());
+        testComponent.sayHello("Bob");
     }
 
 }

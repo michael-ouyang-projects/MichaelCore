@@ -172,7 +172,7 @@ public class Core {
         return true;
     }
 
-    private static String getBeanName(Class<?> clazz) {
+    static String getBeanName(Class<?> clazz) {
         String beanName = clazz.getName();
         if (isComponentClass(clazz)) {
             beanName = getComponentBeanName(clazz.getAnnotation(Component.class), clazz);
@@ -274,14 +274,14 @@ public class Core {
     }
 
     private static void addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {
-        CoreContext.addProxyBean(clazz.getName(), proxy);
+        CoreContext.addProxyBean(getBeanName(clazz), proxy);
     }
 
     private static void initializeAutowired() throws Exception {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
-                autowireDependencies(clazz, CoreContext.getRealBean(getBeanName(clazz)));
+                autowireDependencies(clazz, CoreContext.getRealBean(clazz));
             }
         }
     }
@@ -313,12 +313,13 @@ public class Core {
         for (String fqcn : CoreContext.getFqcns()) {
             Class<?> clazz = getClassByFqcn(fqcn);
             if (isConfigurationClass(clazz)) {
-                executeMethodWithStartupAnnotation(clazz, CoreContext.getBean(clazz));
+                MultiValueTreeMap<Integer, Method> map = collectMethodsWithStartupAnnotation(clazz);
+                executeMethodsWithStartupAnnotationByOrder(map, CoreContext.getBean(clazz));
             }
         }
     }
 
-    private static void executeMethodWithStartupAnnotation(Class<?> clazz, Object configurationBean) throws Exception {
+    private static MultiValueTreeMap<Integer, Method> collectMethodsWithStartupAnnotation(Class<?> clazz) throws Exception {
         MultiValueTreeMap<Integer, Method> map = null;
         for (Method method : clazz.getMethods()) {
             if (method.isAnnotationPresent(ExecuteAfterContextStartup.class)) {
@@ -328,7 +329,10 @@ public class Core {
                 map.put(method.getAnnotation(ExecuteAfterContextStartup.class).order(), method);
             }
         }
+        return map;
+    }
 
+    private static void executeMethodsWithStartupAnnotationByOrder(MultiValueTreeMap<Integer, Method> map, Object configurationBean) throws Exception {
         if (map != null) {
             for (Method method : map.getAllByOrder()) {
                 method.invoke(configurationBean);

@@ -91,8 +91,8 @@ public class CoreContext {
         return method.invoke(beanFactory.get(method.getDeclaringClass().getName()));
     }
 
-    public static Object getRealBean(String name) {
-        Object bean = beanFactory.get(name);
+    public static Object getRealBean(Class<?> clazz) {
+        Object bean = beanFactory.get(Core.getBeanName(clazz));
         if (isProxy(bean)) {
             bean = realBeans.get(bean.getClass().getName());
         }

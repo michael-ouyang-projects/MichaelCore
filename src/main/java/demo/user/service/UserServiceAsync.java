@@ -17,11 +17,11 @@ public class UserServiceAsync implements IUserService {
 	@Autowired
     private UserService userService;
 
+	@Transactional
     public List<User> queryAll() {
         return userService.queryAll();
     }
 
-    @Transactional
     public void addUser(User user) {
     	try {
             Thread.sleep(5000);

@@ -1,7 +1,9 @@
 package tw.framework.michaelcore.aop;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.sf.cglib.proxy.InvocationHandler;
@@ -20,98 +22,65 @@ public class MichaelCoreAopHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        boolean isSync = true;
-        Object result = null;
-        String className = proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0];
-        Class<?> realClass = Class.forName(className);
+        Class<?> clazz = getRealClassByProxy(proxy);
         List<Object> aopHandlers = new ArrayList<>();
+        dealWithTransactional(clazz, method, aopHandlers);
+        dealWithAopHere(clazz, method, aopHandlers);
 
-        if (asyncOnClass(realClass)) {
-            aopHandlers.add(CoreContext.getBean(AsyncAop.class));
-            isSync = false;
+        if (asyncOnClassOrMethod(clazz, method)) {
+            return CoreContext.getBean(AsyncAop.class).invokeAsync(aopHandlers, method, args);
         } else {
-            for (Method realMethod : realClass.getMethods()) {
-                if (asyncOnMethod(realMethod, method)) {
-                    aopHandlers.add(CoreContext.getBean(AsyncAop.class));
-                    isSync = false;
-                    break;
+            return invokeSync(clazz, method, args, aopHandlers);
+        }
+    }
+
+    private Class<?> getRealClassByProxy(Object proxy) throws Exception {
+        return Class.forName(proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0]);
+    }
+
+    private void dealWithTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
+        if (transactionalOnClassOrMethod(clazz, method)) {
+            addTransactionalAopToAopHandlers(aopHandlers);
+        }
+    }
+
+    private boolean transactionalOnClassOrMethod(Class<?> clazz, Method method) {
+        return clazz.isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Transactional.class);
+    }
+
+    private void addTransactionalAopToAopHandlers(List<Object> aopHandlers) {
+        aopHandlers.add(CoreContext.getBean(TransactionalAop.class));
+    }
+
+    private void dealWithAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
+        if (clazz.isAnnotationPresent(AopHere.class)) {
+            aopHandlers.add(CoreContext.getBean(clazz.getAnnotation(AopHere.class).value()));
+        }
+        if (method.isAnnotationPresent(AopHere.class)) {
+            aopHandlers.add(CoreContext.getBean(method.getAnnotation(AopHere.class).value()));
+        }
+    }
+
+    private boolean asyncOnClassOrMethod(Class<?> clazz, Method method) {
+        return clazz.isAnnotationPresent(Async.class) || method.isAnnotationPresent(Async.class);
+    }
+
+    private Object invokeSync(Class<?> clazz, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
+        executeAopMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
+        Object returningObject = method.invoke(CoreContext.getRealBean(clazz), args);
+        Collections.reverse(aopHandlers);
+        executeAopMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
+        return returningObject;
+    }
+
+    private void executeAopMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> specifiedAnnotation) throws Exception {
+        for (Object handler : aopHandlers) {
+            for (Method handlerMethod : handler.getClass().getMethods()) {
+                if (handlerMethod.isAnnotationPresent(specifiedAnnotation)) {
+                    handlerMethod.invoke(handler);
                 }
             }
         }
-
-        if (transactionalOnClass(realClass)) {
-            aopHandlers.add(CoreContext.getBean(TransactionalAop.class));
-        } else {
-            for (Method realMethod : realClass.getMethods()) {
-                if (transactionalOnMethod(realMethod, method)) {
-                    aopHandlers.add(CoreContext.getBean(TransactionalAop.class));
-                    break;
-                }
-            }
-        }
-
-        if (aopOnClass(realClass)) {
-            aopHandlers.add(CoreContext.getBean(realClass.getAnnotation(AopHere.class).value()));
-        }
-        for (Method realMethod : realClass.getMethods()) {
-            if (aopOnMethod(realMethod, method)) {
-                aopHandlers.add(CoreContext.getBean(realMethod.getAnnotation(AopHere.class).value()));
-                break;
-            }
-        }
-
-        if (isSync) {
-            for (int i = 0; i < aopHandlers.size(); i++) {
-                Class<?> handlerClass = aopHandlers.get(i).getClass();
-                for (Method handlerMethod : handlerClass.getMethods()) {
-                    if (handlerMethod.isAnnotationPresent(Before.class)) {
-                        handlerMethod.invoke(aopHandlers.get(i));
-                    }
-                }
-            }
-            result = method.invoke(CoreContext.getRealBean(className), args);
-            for (int i = aopHandlers.size() - 1; i >= 0; i--) {
-                Class<?> handlerClass = aopHandlers.get(i).getClass();
-                for (Method handlerMethod : handlerClass.getMethods()) {
-                    if (handlerMethod.isAnnotationPresent(After.class)) {
-                        handlerMethod.invoke(aopHandlers.get(i));
-                    }
-                }
-            }
-        } else {
-            Class<?> handlerClass = aopHandlers.get(0).getClass();
-            for (Method handlerMethod : handlerClass.getMethods()) {
-                if ("runAsync".equals(handlerMethod.getName())) {
-                    result = handlerMethod.invoke(aopHandlers.get(0), aopHandlers, method, args);
-                }
-            }
-        }
-
-        return result;
-    }
-
-    private boolean asyncOnClass(Class<?> realClass) {
-        return realClass.isAnnotationPresent(Async.class);
-    }
-
-    private boolean transactionalOnClass(Class<?> realClass) {
-        return realClass.isAnnotationPresent(Transactional.class);
-    }
-
-    private boolean aopOnClass(Class<?> realClass) {
-        return realClass.isAnnotationPresent(AopHere.class);
-    }
-
-    private boolean asyncOnMethod(Method realMethod, Method method) {
-        return realMethod.isAnnotationPresent(Async.class) && realMethod.getName().equals(method.getName());
-    }
-
-    private boolean transactionalOnMethod(Method realMethod, Method method) {
-        return realMethod.isAnnotationPresent(Transactional.class) && realMethod.getName().equals(method.getName());
-    }
-
-    private boolean aopOnMethod(Method realMethod, Method method) {
-        return realMethod.isAnnotationPresent(AopHere.class) && realMethod.getName().equals(method.getName());
     }
 
 }
