@@ -1,6 +1,8 @@
 package tw.framework.michaelcore.async;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -13,35 +15,32 @@ import tw.framework.michaelcore.core.CoreContext;
 public class AsyncAop {
 
     @SuppressWarnings("unchecked")
-    public CompletableFuture<Object> invokeAsync(List<Object> aopHandlers, Method method, Object[] args) {
-        CompletableFuture<Object> future = CompletableFuture.supplyAsync(() -> {
+    public CompletableFuture<Object> invokeAsync(Class<?> clazz, Method method, Object[] args, List<Object> aopHandlers) {
+        return CompletableFuture.supplyAsync(() -> {
             Object returningObject = null;
             try {
-                for (int i = 0; i < aopHandlers.size(); i++) {
-                    Class<?> handlerClass = aopHandlers.get(i).getClass();
-                    for (Method handlerMethod : handlerClass.getMethods()) {
-                        if (handlerMethod.isAnnotationPresent(Before.class)) {
-                            handlerMethod.invoke(aopHandlers.get(i));
-                        }
-                    }
+                executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
+                returningObject = method.invoke(CoreContext.getRealBean(clazz), args);
+                if (returningObject != null) {
+                    returningObject = ((CompletableFuture<Object>) returningObject).get();
                 }
-                System.out.println(Thread.currentThread().getName());
-                returningObject = method.invoke(CoreContext.getRealBean(method.getDeclaringClass()), args);
-                for (int i = aopHandlers.size() - 1; i >= 0; i--) {
-                    Class<?> handlerClass = aopHandlers.get(i).getClass();
-                    for (Method handlerMethod : handlerClass.getMethods()) {
-                        if (handlerMethod.isAnnotationPresent(After.class)) {
-                            handlerMethod.invoke(aopHandlers.get(i));
-                        }
-                    }
-                }
-                returningObject = ((CompletableFuture<Object>) returningObject).get();
+                Collections.reverse(aopHandlers);
+                executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             return returningObject;
         });
-        return future;
+    }
+
+    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> specifiedAnnotation) throws Exception {
+        for (Object handler : aopHandlers) {
+            for (Method handlerMethod : handler.getClass().getMethods()) {
+                if (handlerMethod.isAnnotationPresent(specifiedAnnotation)) {
+                    handlerMethod.invoke(handler);
+                }
+            }
+        }
     }
 
 }

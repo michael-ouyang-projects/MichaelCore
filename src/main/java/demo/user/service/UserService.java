@@ -12,7 +12,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Service;
 
 @Service
-public class UserService implements IUserService {
+public class UserService {
 
     @Autowired
     private UserRepository userRepository;
@@ -24,13 +24,13 @@ public class UserService implements IUserService {
 
     @Transactional
     public void addUser(User user) {
-    	AopHelper.executeInnerMethodWithAop(UserService.class).testInnerMethodCall();
+        AopHelper.executeInnerMethodWithAop(UserService.class).testInnerMethodCall();
         userRepository.addUser(user);
     }
 
     @AopHere(TestInnerMethodCallAop.class)
-	public void testInnerMethodCall() {
-		System.out.println("Inner Method()");
-	}
+    public void testInnerMethodCall() {
+        System.out.println("Inner Method()");
+    }
 
 }
