@@ -3,9 +3,9 @@ package demo.test;
 import java.util.Date;
 
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.core.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.annotation.Value;
 
 @Component(value = "testComponent")
 public class TestComponent {

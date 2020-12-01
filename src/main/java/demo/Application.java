@@ -1,6 +1,6 @@
 package demo;
 
-import tw.framework.michaelcore.core.Core;
+import tw.framework.michaelcore.ioc.Core;
 
 public class Application {
 

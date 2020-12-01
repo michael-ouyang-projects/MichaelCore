@@ -2,10 +2,10 @@ package demo.test;
 
 import java.util.Date;
 
-import tw.framework.michaelcore.core.CoreContext;
-import tw.framework.michaelcore.core.annotation.Configuration;
-import tw.framework.michaelcore.core.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
+import tw.framework.michaelcore.ioc.annotation.Configuration;
+import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextStartup;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 
 @Configuration

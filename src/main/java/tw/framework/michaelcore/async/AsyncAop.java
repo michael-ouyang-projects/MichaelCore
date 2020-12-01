@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import tw.framework.michaelcore.aop.annotation.After;
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
-import tw.framework.michaelcore.core.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContext;
 
 @AopHandler
 public class AsyncAop {
