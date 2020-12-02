@@ -17,7 +17,9 @@ public class Model {
     }
 
     public void add(String key, Object value) {
-        model.put(key, value);
+        if (value != null) {
+            model.put(key, value);
+        }
     }
 
     public Object get(String key) {

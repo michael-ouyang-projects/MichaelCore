@@ -56,7 +56,7 @@ public class MvcCore {
         executor.submit(() -> {
             try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(listeningPort))) {
                 while (true) {
-                    executor.submit(new RequestThread(serverSocket.accept(), requestProcessor));
+                    executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }
             } catch (Exception e) {
                 e.printStackTrace();

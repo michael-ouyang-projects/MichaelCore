@@ -3,6 +3,8 @@ package tw.framework.michaelcore.mvc;
 import java.io.BufferedReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -32,45 +34,52 @@ public class RequestProcessor {
     @Value
     private String loggingPage;
 
-    public RequestInfo getClientRequest(BufferedReader reader) throws IOException {
-        StringBuilder requestHeader = new StringBuilder();
-        StringBuilder requestBody = new StringBuilder();
-        String line = reader.readLine();
-        if (line != null) {
-            String method = line.split(" ")[0];
-            while (havingData(line)) {
-                requestHeader.append(line + "\n");
-                line = reader.readLine();
+    public Request getRequest(InputStream inputStream) throws IOException {
+        Request request = null;
+        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
+        String line = null;
+        if (containsData(line = reader.readLine())) {
+            request = initRequest(line);
+            while (containsData(line = reader.readLine())) {
+                request.appendToRequestHeader(line + "\n");
             }
-            if ("POST".equals(method) || "PUT".equals(method) || "DELETE".equals(method)) {
-                while (reader.ready()) {
-                    requestBody.append((char) reader.read());
-                }
+            while (reader.ready()) {
+                request.appendToRequestBody((char) reader.read());
             }
         }
-        return requestHeader.toString().length() > 0 ? new RequestInfo(requestHeader.toString(), requestBody.toString()) : null;
+        return request;
     }
 
-    private boolean havingData(String line) {
+    private boolean containsData(String line) {
         return line != null && line.length() > 0;
     }
 
-    public void logRequest(RequestInfo request) {
+    private Request initRequest(String line) {
+        Request request = new Request();
+        String[] requestMethodAndPath = line.split(" ");
+        request.setRequestMethod(requestMethodAndPath[0].toUpperCase());
+        request.setRequestPath(requestMethodAndPath[1]);
+        request.setRequestProtocol(requestMethodAndPath[2]);
+        return request;
+    }
+
+    public void writeLog(Request request) {
         try (FileWriter writer = new FileWriter(loggingPage, true)) {
-            writer.write(request.getRequestHeader() + "\n");
+            writer.write(String.format("%s %s %s\n", request.getRequestMethod(), request.getRequestPath(), request.getRequestProtocol()));
+            writer.write(String.format("%s\n", request.getRequestHeader()));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public void responseToClient(RequestInfo requestInfo, OutputStream outputStream) throws IOException {
-        byte[] response = createResponse(requestInfo);
+    public void responseToClient(Request request, OutputStream outputStream) throws IOException {
+        byte[] response = createResponse(request);
         if (response != null) {
             outputStream.write(response);
         }
     }
 
-    private byte[] createResponse(RequestInfo requestInfo) {
+    private byte[] createResponse(Request requestInfo) {
         byte[] resource = getResource(requestInfo);
         if (resource != null) {
             byte[] info = getInfo(requestInfo, resource);
@@ -79,7 +88,7 @@ public class RequestProcessor {
         return null;
     }
 
-    private byte[] getResource(RequestInfo requestInfo) {
+    private byte[] getResource(Request requestInfo) {
         byte[] resource = null;
         try {
             String requestMethod = requestInfo.getRequestMethod();
@@ -98,7 +107,7 @@ public class RequestProcessor {
                         Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
                         Model model = (Model) mappingMethod.invoke(controller, invokeParameters);
                         resource = readAndProcessTemplate(model);
-                    }else if (mappingClass.isAnnotationPresent(RestController.class)) {
+                    } else if (mappingClass.isAnnotationPresent(RestController.class)) {
                         jsonToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
                         Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
                         Object resultObject = mappingMethod.invoke(controller, invokeParameters);
@@ -186,7 +195,7 @@ public class RequestProcessor {
         return template.toString().getBytes();
     }
 
-    private byte[] getInfo(RequestInfo request, byte[] resource) {
+    private byte[] getInfo(Request request, byte[] resource) {
         String infoFormat = "HTTP/1.1 200 OK"
                 + "Content-Length: %d"
                 + "Content-Type: %s\r\n\r\n";
