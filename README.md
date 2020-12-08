@@ -5,3 +5,4 @@
 4. MVC
 5. Transactional 
 6. Async
+7. Testing & Mocking
