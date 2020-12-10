@@ -265,13 +265,9 @@ public class Core {
     static Object createProxy(Class<?> clazz) {
         Enhancer enhancer = new Enhancer();
         enhancer.setSuperclass(clazz);
-        enhancer.setCallback(getAopHandler());
+        enhancer.setCallback(CoreContext.getBean(MichaelCoreAopHandler.class));
         Object object = enhancer.create();
         return object;
-    }
-
-    private static MichaelCoreAopHandler getAopHandler() {
-        return CoreContext.getBean(MichaelCoreAopHandler.class);
     }
 
     private static void addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {

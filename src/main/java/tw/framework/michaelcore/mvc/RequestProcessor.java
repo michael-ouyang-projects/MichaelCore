@@ -73,74 +73,72 @@ public class RequestProcessor {
     }
 
     public void responseToClient(Request request, OutputStream outputStream) throws IOException {
-        byte[] response = createResponse(request);
-        if (response != null) {
-            outputStream.write(response);
-        }
-    }
-
-    private byte[] createResponse(Request requestInfo) {
-        byte[] resource = getResource(requestInfo);
+        byte[] resource = getResource(request);
         if (resource != null) {
-            byte[] info = getInfo(requestInfo, resource);
-            return concatenateInfoAndResource(info, resource);
+            outputStream.write(createResponse(resource));
         }
-        return null;
     }
 
-    private byte[] getResource(Request requestInfo) {
+    private byte[] getResource(Request request) {
         byte[] resource = null;
         try {
-            String requestMethod = requestInfo.getRequestMethod();
-            String requestPath = requestInfo.getRequestPath();
-            Map<String, Method> requestMapping = MvcCore.getRequestMapping().get(requestMethod);
-            Method mappingMethod = requestMapping.get(requestPath.split("\\?")[0]);
-
+            Method mappingMethod = getMappingMethod(request);
             if (mappingMethod != null) {
-                Object[] invokeParameters = new Object[mappingMethod.getParameterCount()];
-                if ("GET".equals(requestMethod)) {
-                    if (requestPath.contains("?")) {
-                        parameterStringToInvokeParameters(requestPath.split("\\?")[1], mappingMethod, invokeParameters);
-                    }
-                    Class<?> mappingClass = mappingMethod.getDeclaringClass();
-                    if (mappingClass.isAnnotationPresent(Controller.class)) {
-                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                        Model model = (Model) mappingMethod.invoke(controller, invokeParameters);
-                        resource = readAndProcessTemplate(model);
-                    } else if (mappingClass.isAnnotationPresent(RestController.class)) {
-                        jsonToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
-                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                        Object resultObject = mappingMethod.invoke(controller, invokeParameters);
-                        if (resultObject != null) {
-                            resource = gson.toJson(resultObject).getBytes();
-                        } else {
-                            resource = new String("Completed without error!").getBytes();
-                        }
-                    }
-                } else {
-                    Class<?> mappingClass = mappingMethod.getDeclaringClass();
-                    if (mappingClass.isAnnotationPresent(Controller.class)) {
-                        parameterStringToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
-                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                        Model model = (Model) mappingMethod.invoke(controller, invokeParameters);
-                        resource = readAndProcessTemplate(model);
-                    } else if (mappingClass.isAnnotationPresent(RestController.class)) {
-                        jsonToInvokeParameters(requestInfo.getRequestBody(), mappingMethod, invokeParameters);
-                        Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
-                        Object resultObject = mappingMethod.invoke(controller, invokeParameters);
-                        if (resultObject != null) {
-                            resource = gson.toJson(resultObject).getBytes();
-                        } else {
-                            resource = new String("Completed without error!").getBytes();
-                        }
-                    }
-                }
+                resource = getResourceThroughRequestInMapping(request, mappingMethod);
             } else {
-                resource = Files.readAllBytes(Paths.get("resources", requestPath));
+                resource = getStaticResource(request);
             }
-        } catch (Throwable e) {
-            e.printStackTrace();
+        } catch (Exception e) {
             resource = new String("Error while getting resource!").getBytes();
+            e.printStackTrace();
+        }
+        return resource;
+    }
+
+    private Method getMappingMethod(Request request) {
+        Map<String, Method> requestMapping = MvcCore.getRequestMapping().get(request.getRequestMethod());
+        return requestMapping.get(request.getRequestPath().split("\\?")[0]);
+    }
+
+    private byte[] getResourceThroughRequestInMapping(Request request, Method mappingMethod) throws Exception {
+        byte[] resource = null;
+        Object[] parameters = new Object[mappingMethod.getParameterCount()];
+        if ("GET".equals(request.getRequestMethod())) {
+            if (request.getRequestPath().contains("?")) {
+                parameterStringToInvokeParameters(request.getRequestPath().split("\\?")[1], mappingMethod, parameters);
+            }
+            Class<?> mappingClass = mappingMethod.getDeclaringClass();
+            if (mappingClass.isAnnotationPresent(Controller.class)) {
+                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                Model model = (Model) mappingMethod.invoke(controller, parameters);
+                resource = readAndProcessTemplate(model);
+            } else if (mappingClass.isAnnotationPresent(RestController.class)) {
+                jsonToInvokeParameters(request.getRequestBody(), mappingMethod, parameters);
+                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                Object resultObject = mappingMethod.invoke(controller, parameters);
+                if (resultObject != null) {
+                    resource = gson.toJson(resultObject).getBytes();
+                } else {
+                    resource = new String("Completed without error!").getBytes();
+                }
+            }
+        } else {
+            Class<?> mappingClass = mappingMethod.getDeclaringClass();
+            if (mappingClass.isAnnotationPresent(Controller.class)) {
+                parameterStringToInvokeParameters(request.getRequestBody(), mappingMethod, parameters);
+                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                Model model = (Model) mappingMethod.invoke(controller, parameters);
+                resource = readAndProcessTemplate(model);
+            } else if (mappingClass.isAnnotationPresent(RestController.class)) {
+                jsonToInvokeParameters(request.getRequestBody(), mappingMethod, parameters);
+                Object controller = CoreContext.getBean(mappingMethod.getDeclaringClass().getName());
+                Object resultObject = mappingMethod.invoke(controller, parameters);
+                if (resultObject != null) {
+                    resource = gson.toJson(resultObject).getBytes();
+                } else {
+                    resource = new String("Completed without error!").getBytes();
+                }
+            }
         }
         return resource;
     }
@@ -195,16 +193,22 @@ public class RequestProcessor {
         return template.toString().getBytes();
     }
 
-    private byte[] getInfo(Request request, byte[] resource) {
-        String infoFormat = "HTTP/1.1 200 OK"
-                + "Content-Length: %d"
-                + "Content-Type: %s\r\n\r\n";
-        return String.format(infoFormat, resource.length, "fe").getBytes();
+    private byte[] getStaticResource(Request request) throws IOException {
+        return Files.readAllBytes(Paths.get("resources", request.getRequestPath()));
     }
 
-    private byte[] concatenateInfoAndResource(byte[] info, byte[] resource) {
-        int responseSize = info.length + resource.length;
-        return ByteBuffer.allocate(responseSize).put(info).put(resource).array();
+    private byte[] createResponse(byte[] resource) {
+        byte[] responseHeader = createResponseHeader(resource.length);
+        int dataSize = responseHeader.length + resource.length;
+        return ByteBuffer.allocate(dataSize).put(responseHeader).put(resource).array();
+    }
+
+    private byte[] createResponseHeader(int resourceLength) {
+        String headerFormat = "HTTP/1.1 200 OK"
+                + "Content-Length: %d"
+                + "Content-Type: %s\r\n\r\n";
+        // TODO Files.probeContentType
+        return String.format(headerFormat, resourceLength, "tmp").getBytes();
     }
 
 }

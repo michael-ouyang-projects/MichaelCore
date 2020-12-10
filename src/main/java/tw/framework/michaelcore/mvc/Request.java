@@ -48,6 +48,4 @@ public class Request {
         this.requestBody.append(bodyData);
     }
 
-    // TODO Files.probeContentType
-
 }
