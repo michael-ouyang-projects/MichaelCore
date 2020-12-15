@@ -2,7 +2,6 @@ package demo.user.controller;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 import com.google.gson.Gson;
 
@@ -52,7 +51,7 @@ public class UserController {
     }
 
     @Get("/user/add")
-    public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) throws InterruptedException, ExecutionException {
+    public Model addUserByGet(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUser(new User(name, age));
         Model model = new Model("success.html");
         model.add("name", name);

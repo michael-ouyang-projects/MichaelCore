@@ -21,11 +21,11 @@ import tw.framework.michaelcore.ioc.CoreContext;
 public class MichaelCoreAopHandler implements InvocationHandler {
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+    public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
         Class<?> clazz = method.getDeclaringClass();
         List<Object> aopHandlers = new ArrayList<>();
-        dealWithTransactional(clazz, method, aopHandlers);
-        dealWithAopHere(clazz, method, aopHandlers);
+        processTransactional(clazz, method, aopHandlers);
+        processAopHere(clazz, method, aopHandlers);
 
         if (asyncOnClassOrMethod(clazz, method)) {
             return CoreContext.getBean(AsyncAop.class).invokeAsync(clazz, method, args, aopHandlers);
@@ -34,7 +34,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         }
     }
 
-    private void dealWithTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
+    private void processTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
         if (transactionalOnClassOrMethod(clazz, method)) {
             aopHandlers.add(CoreContext.getBean(TransactionalAop.class));
         }
@@ -44,7 +44,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         return clazz.isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Transactional.class);
     }
 
-    private void dealWithAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
+    private void processAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
         if (clazz.isAnnotationPresent(AopHere.class)) {
             aopHandlers.add(CoreContext.getBean(clazz.getAnnotation(AopHere.class).value()));
         }
@@ -65,11 +65,11 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         return returningObject;
     }
 
-    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> specifiedAnnotation) throws Exception {
+    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> annotation) throws Exception {
         for (Object handler : aopHandlers) {
-            for (Method handlerMethod : handler.getClass().getMethods()) {
-                if (handlerMethod.isAnnotationPresent(specifiedAnnotation)) {
-                    handlerMethod.invoke(handler);
+            for (Method method : handler.getClass().getMethods()) {
+                if (method.isAnnotationPresent(annotation)) {
+                    method.invoke(handler);
                 }
             }
         }

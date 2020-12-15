@@ -4,9 +4,11 @@ public class Request {
 
     private String requestMethod;
     private String requestPath;
+    private String pathParametersString;
     private String requestProtocol;
     private StringBuilder requestHeader = new StringBuilder();
     private StringBuilder requestBody = new StringBuilder();
+    private String responseContentType;
 
     public String getRequestMethod() {
         return requestMethod;
@@ -22,6 +24,14 @@ public class Request {
 
     public void setRequestPath(String requestPath) {
         this.requestPath = requestPath;
+    }
+
+    public String getPathParametersString() {
+        return pathParametersString;
+    }
+
+    public void setPathParametersString(String pathParametersString) {
+        this.pathParametersString = pathParametersString;
     }
 
     public String getRequestProtocol() {
@@ -46,6 +56,17 @@ public class Request {
 
     public void appendToRequestBody(char bodyData) {
         this.requestBody.append(bodyData);
+    }
+
+    public String getResponseContentType() {
+        if (responseContentType == null) {
+            return "text/plain";
+        }
+        return responseContentType;
+    }
+
+    public void setResponseContentType(String responseContentType) {
+        this.responseContentType = responseContentType;
     }
 
 }

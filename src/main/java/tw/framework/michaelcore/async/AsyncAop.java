@@ -33,11 +33,11 @@ public class AsyncAop {
         });
     }
 
-    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> specifiedAnnotation) throws Exception {
+    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> annotation) throws Exception {
         for (Object handler : aopHandlers) {
-            for (Method handlerMethod : handler.getClass().getMethods()) {
-                if (handlerMethod.isAnnotationPresent(specifiedAnnotation)) {
-                    handlerMethod.invoke(handler);
+            for (Method method : handler.getClass().getMethods()) {
+                if (method.isAnnotationPresent(annotation)) {
+                    method.invoke(handler);
                 }
             }
         }

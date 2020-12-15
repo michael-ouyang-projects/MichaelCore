@@ -114,10 +114,8 @@ public class CoreContext {
     }
 
     public static void addProxyBean(String name, Object proxy) {
-        if (proxy != null) {
-            Object realBean = beanFactory.put(name, proxy);
-            realBeans.put(proxy.getClass().getName(), realBean);
-        }
+        Object realBean = beanFactory.put(name, proxy);
+        realBeans.put(proxy.getClass().getName(), realBean);
     }
 
     public static boolean containsBean(String name) {
