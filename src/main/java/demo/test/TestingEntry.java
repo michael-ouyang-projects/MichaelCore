@@ -1,7 +1,5 @@
 package demo.test;
 
-import java.util.Date;
-
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
@@ -20,42 +18,98 @@ public class TestingEntry {
 
     @Bean(value = "testBeanPrototype", scope = BeanScope.PROTOTYPE)
     public TestBean testBeanPrototype() {
-        return new TestBean();
+        TestBean testBean = new TestBean();
+        testBean.setName("Prototype TestBean");
+        return testBean;
     }
 
     @ExecuteAfterContextStartup(order = 1)
-    public void testIoC() throws InterruptedException {
-        TestBean bean1 = CoreContext.getBean("testBeanPrototype", TestBean.class);
-        TestBean bean2 = CoreContext.getBean("testBeanPrototype", TestBean.class);
-        bean1.setName("first");
-        bean2.setName("second");
+    public void testIoCBean() {
+        System.out.print("Test Singleton Bean (same) => ");
+        TestBean bean1 = CoreContext.getBean("testBeanSingleton", TestBean.class);
+        TestBean bean2 = CoreContext.getBean("testBeanSingleton", TestBean.class);
         if (bean1 == bean2) {
             System.out.println("same bean!");
         } else {
             System.out.println("different bean!");
         }
-        System.out.println(String.format("Bean1: %s, Bean2: %s\n", bean1.getName(), bean2.getName()));
 
-        TestComponent component1 = CoreContext.getBean("testComponent", TestComponent.class);
-        TestComponent component2 = CoreContext.getBean("testComponent", TestComponent.class);
-        component1.setDate(new Date());
-        Thread.sleep(1000);
-        component2.setDate(new Date());
+        System.out.print("Test Prototype Bean (different) => ");
+        TestBean bean3 = CoreContext.getBean("testBeanPrototype", TestBean.class);
+        TestBean bean4 = CoreContext.getBean("testBeanPrototype", TestBean.class);
+        if (bean3 == bean4) {
+            System.out.println("same bean!");
+        } else {
+            System.out.println("different bean!");
+        }
+    }
+
+    @ExecuteAfterContextStartup(order = 2)
+    public void testIoCComponent() throws InterruptedException {
+        System.out.print("Test Singleton Component (same) => ");
+        TestComponentSingleton component1 = CoreContext.getBean("testComponentSingleton", TestComponentSingleton.class);
+        TestComponentSingleton component2 = CoreContext.getBean("testComponentSingleton", TestComponentSingleton.class);
         if (component1 == component2) {
             System.out.println("same component!");
         } else {
             System.out.println("different component!");
         }
-        component1.showInfo();
-        component2.showInfo();
+
+        System.out.print("Test Prototype Component (different) => ");
+        TestComponentPrototype component3 = CoreContext.getBean("testComponentPrototype", TestComponentPrototype.class);
+        TestComponentPrototype component4 = CoreContext.getBean("testComponentPrototype", TestComponentPrototype.class);
+        if (component3 == component4) {
+            System.out.println("same component!");
+        } else {
+            System.out.println("different component!");
+        }
+    }
+
+    @ExecuteAfterContextStartup(order = 3)
+    public void testIoCComponentDependencies() throws InterruptedException {
+        System.out.print("Test Prototype Dependency (different) => ");
+        TestComponentSingleton component1 = CoreContext.getBean("testComponentSingleton", TestComponentSingleton.class);
+        TestBean bean1 = component1.getTestBean();
+        TestBean bean2 = CoreContext.getBean("testBeanPrototype", TestBean.class);
+        if (bean1 == bean2) {
+            System.out.println("same dependency bean!");
+        } else {
+            System.out.println("different dependency bean!");
+        }
+
+        System.out.print("Test Singleton Dependency (same) => ");
+        TestComponentPrototype component2 = CoreContext.getBean("testComponentPrototype", TestComponentPrototype.class);
+        TestBean bean3 = component2.getTestBean();
+        TestBean bean4 = CoreContext.getBean("testBeanSingleton", TestBean.class);
+        if (bean3 == bean4) {
+            System.out.println("same dependency bean!");
+        } else {
+            System.out.println("different dependency bean!");
+        }
         System.out.println();
     }
 
-    @ExecuteAfterContextStartup(order = 2)
-    public void testAop() throws Exception {
-        TestComponent testComponent = CoreContext.getBean("testComponent", TestComponent.class);
-        System.out.println(testComponent.getClass().getName());
-        testComponent.sayHello("Bob");
+    @ExecuteAfterContextStartup(order = 4)
+    public void testComponentAop() throws Exception {
+        System.out.println("Test Singleton Component AOP =>");
+        TestComponentSingleton testComponent1 = CoreContext.getBean("testComponentSingleton", TestComponentSingleton.class);
+        testComponent1.sayHello();
+        System.out.println();
+
+        System.out.println("Test Prototype Component AOP =>");
+        TestComponentPrototype testComponent2 = CoreContext.getBean("testComponentPrototype", TestComponentPrototype.class);
+        testComponent2.sayHello();
+        System.out.println();
+    }
+
+    @ExecuteAfterContextStartup(order = 5)
+    public void testApplicationProperties() throws Exception {
+        System.out.println("Test application.properties =>");
+        TestComponentSingleton testComponent1 = CoreContext.getBean("testComponentSingleton", TestComponentSingleton.class);
+        TestComponentPrototype testComponent2 = CoreContext.getBean("testComponentPrototype", TestComponentPrototype.class);
+        System.out.println(testComponent1.getTest());
+        System.out.println(testComponent2.getTest());
+        System.out.println();
     }
 
 }

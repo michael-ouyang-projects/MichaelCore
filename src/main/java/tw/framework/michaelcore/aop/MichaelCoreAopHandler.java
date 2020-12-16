@@ -28,9 +28,9 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         processAopHere(clazz, method, aopHandlers);
 
         if (asyncOnClassOrMethod(clazz, method)) {
-            return CoreContext.getBean(AsyncAop.class).invokeAsync(clazz, method, args, aopHandlers);
+            return CoreContext.getBean(AsyncAop.class).invokeAsync(proxy, method, args, aopHandlers);
         } else {
-            return invokeSync(clazz, method, args, aopHandlers);
+            return invokeSync(proxy, method, args, aopHandlers);
         }
     }
 
@@ -57,9 +57,9 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         return clazz.isAnnotationPresent(Async.class) || method.isAnnotationPresent(Async.class);
     }
 
-    private Object invokeSync(Class<?> clazz, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
+    private Object invokeSync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
         executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
-        Object returningObject = method.invoke(CoreContext.getRealBean(clazz), args);
+        Object returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
         Collections.reverse(aopHandlers);
         executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
         return returningObject;

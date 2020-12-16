@@ -15,12 +15,12 @@ import tw.framework.michaelcore.ioc.CoreContext;
 public class AsyncAop {
 
     @SuppressWarnings("unchecked")
-    public CompletableFuture<Object> invokeAsync(Class<?> clazz, Method method, Object[] args, List<Object> aopHandlers) {
+    public CompletableFuture<Object> invokeAsync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) {
         return CompletableFuture.supplyAsync(() -> {
             Object returningObject = null;
             try {
                 executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
-                returningObject = method.invoke(CoreContext.getRealBean(clazz), args);
+                returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
                 if (returningObject != null) {
                     returningObject = ((CompletableFuture<Object>) returningObject).get();
                 }

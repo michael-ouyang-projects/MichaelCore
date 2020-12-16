@@ -276,7 +276,7 @@ public class Core {
     private static void initializeAutowired() throws Exception {
         for (Class<?> clazz : CoreContext.getFqcnClasses()) {
             if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
-                autowireDependencies(clazz, CoreContext.getRealBean(clazz));
+                autowireDependencies(clazz, CoreContext.getRealBeanByClass(clazz));
             }
         }
     }

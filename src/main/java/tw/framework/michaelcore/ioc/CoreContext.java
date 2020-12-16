@@ -44,9 +44,9 @@ public class CoreContext {
         Object bean = beanFactory.get(name);
         try {
             if (isConstructor(bean)) {
-                bean = createPrototypeComponentByConstructor((Constructor<Object>) bean, name);
+                bean = getPrototypeComponentByConstructor((Constructor<Object>) bean, name);
             } else if (isMethod(bean)) {
-                bean = createPrototypeBeanByMethod((Method) bean);
+                bean = getPrototypeBeanByMethod((Method) bean);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -62,45 +62,46 @@ public class CoreContext {
         return bean.getClass().equals(Method.class);
     }
 
-    private static Object createPrototypeComponentByConstructor(Constructor<Object> constructor, String beanName) throws Exception {
+    private static Object getPrototypeComponentByConstructor(Constructor<Object> constructor, String beanName) throws Exception {
         Object realComponent = constructor.newInstance();
         Class<?> componentClass = realComponent.getClass();
         dealWithDependencies(componentClass, realComponent);
         if (needToCreateProxy(componentClass)) {
-            return createProxyAndAddRealBeanToContainer(componentClass, realComponent);
+            return getProxyAndAddRealBeanToContainer(componentClass, realComponent);
         }
         return realComponent;
     }
 
-    private static void dealWithDependencies(Class<?> clazz, Object bean) throws Exception {
-        Core.insertValueToBean(clazz, bean);
-        Core.autowireDependencies(clazz, bean);
+    private static void dealWithDependencies(Class<?> clazz, Object realBean) throws Exception {
+        Core.insertValueToBean(clazz, realBean);
+        Core.autowireDependencies(clazz, realBean);
     }
 
     private static boolean needToCreateProxy(Class<?> clazz) {
         return Core.aopOnClass(clazz) || Core.aopOnMethod(clazz);
     }
 
-    public static Object createProxyAndAddRealBeanToContainer(Class<?> clazz, Object realBean) {
+    public static Object getProxyAndAddRealBeanToContainer(Class<?> clazz, Object realBean) {
         Object proxy = Core.createProxy(clazz);
         realBeans.put(proxy.getClass().getName(), realBean);
         return proxy;
     }
 
-    private static Object createPrototypeBeanByMethod(Method method) throws Exception {
+    private static Object getPrototypeBeanByMethod(Method method) throws Exception {
         return method.invoke(beanFactory.get(method.getDeclaringClass().getName()));
     }
 
-    public static Object getRealBean(Class<?> clazz) {
+    public static Object getRealBeanByClass(Class<?> clazz) {
         Object bean = beanFactory.get(Core.getBeanName(clazz));
-        if (isProxy(bean)) {
-            bean = realBeans.get(bean.getClass().getName());
-        }
-        return bean;
+        return isProxy(bean) ? getRealBeanByProxy(bean) : bean;
     }
 
     private static boolean isProxy(Object bean) {
         return bean.getClass().getName().contains("$$EnhancerByCGLIB$$");
+    }
+
+    public static Object getRealBeanByProxy(Object proxy) {
+        return realBeans.get(proxy.getClass().getName());
     }
 
     public static void addBean(String name, Object object) {
