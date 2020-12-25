@@ -11,9 +11,9 @@ import tw.framework.michaelcore.aop.annotation.After;
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.Before;
-import tw.framework.michaelcore.async.AsyncAop;
+import tw.framework.michaelcore.async.AsyncAopHandler;
 import tw.framework.michaelcore.async.annotation.Async;
-import tw.framework.michaelcore.data.TransactionalAop;
+import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.CoreContext;
 
@@ -28,15 +28,14 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         processAopHere(clazz, method, aopHandlers);
 
         if (asyncOnClassOrMethod(clazz, method)) {
-            return CoreContext.getBean(AsyncAop.class).invokeAsync(proxy, method, args, aopHandlers);
-        } else {
-            return invokeSync(proxy, method, args, aopHandlers);
+            return CoreContext.getBean(AsyncAopHandler.class).invokeAsync(proxy, method, args, aopHandlers);
         }
+        return invokeSync(proxy, method, args, aopHandlers);
     }
 
     private void processTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
         if (transactionalOnClassOrMethod(clazz, method)) {
-            aopHandlers.add(CoreContext.getBean(TransactionalAop.class));
+            aopHandlers.add(CoreContext.getBean(TransactionalAopHandler.class));
         }
     }
 

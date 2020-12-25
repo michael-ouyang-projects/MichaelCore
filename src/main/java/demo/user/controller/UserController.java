@@ -38,6 +38,13 @@ public class UserController {
 
     @Get("/users")
     public Model queryAll() throws Exception {
+        Model model = new Model("data.html");
+        model.add("data", gson.toJson(userService.queryAll()));
+        return model;
+    }
+
+    @Get("/users/async")
+    public Model queryAllAsync() throws Exception {
         System.out.println("before queryAsync()");
         CompletableFuture<List<User>> usersFuture = userServiceAsync.queryAllAsync();
         System.out.println("after queryAsync()");
@@ -62,7 +69,7 @@ public class UserController {
     @Post("/user/add")
     @AopHere(PostAop.class)
     public Model addUserByPost(@RequestParam("name") String name, @RequestParam("age") int age) {
-        userService.addUser(new User(name, age));
+        userService.addUserWithTransactionalRollback(new User(name, age));
         Model model = new Model("success.html");
         model.add("name", name);
         model.add("age", age);

@@ -14,13 +14,16 @@ public class UserRepository {
     private JdbcTemplate jdbcTemplate;
 
     public List<User> queryAll() {
-        String sql = String.format("SELECT NAME, AGE FROM TT_USER");
-        return jdbcTemplate.queryList(sql, User.class);
+        return jdbcTemplate.queryList("SELECT NAME, AGE FROM TT_USER", User.class);
     }
 
     public void addUser(User user) {
         String sql = String.format("INSERT INTO TT_USER(NAME, AGE) VALUES('%s', '%s')", user.getName(), user.getAge());
         jdbcTemplate.execute(sql);
+    }
+
+    public void error() {
+        jdbcTemplate.execute("INSERT INTO UNKNOWN_TABLE(NAME, AGE) VALUES('HI', 'HELLO')");
     }
 
 }

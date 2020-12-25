@@ -17,15 +17,19 @@ public class UserService {
     @Autowired
     private UserRepository userRepository;
 
-    @Transactional
     public List<User> queryAll() {
         return userRepository.queryAll();
     }
 
-    @Transactional
     public void addUser(User user) {
         AopHelper.executeInnerMethodWithAop(UserService.class).testInnerMethodCall();
         userRepository.addUser(user);
+    }
+
+    @Transactional
+    public void addUserWithTransactionalRollback(User user) {
+        userRepository.addUser(user);
+        userRepository.error();
     }
 
     @AopHere(TestInnerMethodCallAop.class)
