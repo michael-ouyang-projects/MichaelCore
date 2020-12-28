@@ -7,7 +7,6 @@ import demo.user.model.User;
 import demo.user.repository.UserRepository;
 import tw.framework.michaelcore.aop.AopHelper;
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Service;
 
@@ -26,10 +25,8 @@ public class UserService {
         userRepository.addUser(user);
     }
 
-    @Transactional
     public void addUserWithTransactionalRollback(User user) {
         userRepository.addUser(user);
-        userRepository.error();
     }
 
     @AopHere(TestInnerMethodCallAop.class)

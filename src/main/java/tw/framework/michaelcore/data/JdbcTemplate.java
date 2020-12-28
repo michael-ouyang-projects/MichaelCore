@@ -21,7 +21,7 @@ public class JdbcTemplate {
 
     public ResultSet query(String sql) {
         ResultSet result = null;
-        Connection connection = TransactionalAopHandler.getThreadConnection().get();
+        Connection connection = TransactionalAopHandler.getCurrentConnection();
         if (connection == null) {
             try (Connection newConnection = dataSource.getConnection();
                     PreparedStatement statement = newConnection.prepareStatement(sql)) {
@@ -42,7 +42,7 @@ public class JdbcTemplate {
 
     public <T> List<T> queryList(String sql, Class<T> clazz) {
         List<T> returningList = new ArrayList<T>();
-        Connection connection = TransactionalAopHandler.getThreadConnection().get();
+        Connection connection = TransactionalAopHandler.getCurrentConnection();
         if (connection == null) {
             try (Connection newConnection = dataSource.getConnection();
                     PreparedStatement statement = newConnection.prepareStatement(sql);
@@ -79,7 +79,7 @@ public class JdbcTemplate {
     }
 
     public void execute(String sql) {
-        Connection connection = TransactionalAopHandler.getThreadConnection().get();
+        Connection connection = TransactionalAopHandler.getCurrentConnection();
         if (connection == null) {
             try (Connection newConnection = dataSource.getConnection();
                     PreparedStatement statement = newConnection.prepareStatement(sql)) {

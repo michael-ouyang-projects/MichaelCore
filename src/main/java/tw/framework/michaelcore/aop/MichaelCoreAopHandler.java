@@ -13,6 +13,7 @@ import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.async.AsyncAopHandler;
 import tw.framework.michaelcore.async.annotation.Async;
+import tw.framework.michaelcore.data.TransactionData;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.CoreContext;
@@ -34,13 +35,25 @@ public class MichaelCoreAopHandler implements InvocationHandler {
     }
 
     private void processTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
-        if (transactionalOnClassOrMethod(clazz, method)) {
-            aopHandlers.add(CoreContext.getBean(TransactionalAopHandler.class));
+        if (transactionalOnMethod(method)) {
+            addTransactionDataAndHandler(method.getAnnotation(Transactional.class), aopHandlers);
+        } else if (transactionalOnClass(clazz)) {
+            addTransactionDataAndHandler(clazz.getAnnotation(Transactional.class), aopHandlers);
         }
     }
 
-    private boolean transactionalOnClassOrMethod(Class<?> clazz, Method method) {
-        return clazz.isAnnotationPresent(Transactional.class) || method.isAnnotationPresent(Transactional.class);
+    private boolean transactionalOnMethod(Method method) {
+        return method.isAnnotationPresent(Transactional.class);
+    }
+
+    private boolean transactionalOnClass(Class<?> clazz) {
+        return clazz.isAnnotationPresent(Transactional.class);
+    }
+
+    private void addTransactionDataAndHandler(Transactional transactional, List<Object> aopHandlers) {
+        TransactionalAopHandler transactionalAopHandler = CoreContext.getBean(TransactionalAopHandler.class);
+        transactionalAopHandler.addNewTransactionData(new TransactionData(transactional.propagation(), transactional.isolation()));
+        aopHandlers.add(transactionalAopHandler);
     }
 
     private void processAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
@@ -58,7 +71,12 @@ public class MichaelCoreAopHandler implements InvocationHandler {
 
     private Object invokeSync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
         executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
-        Object returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
+        Object returningObject = null;
+        try {
+            returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
+        } catch (Exception e) {
+            TransactionalAopHandler.setRollback();
+        }
         Collections.reverse(aopHandlers);
         executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
         return returningObject;
