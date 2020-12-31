@@ -2,7 +2,7 @@ package demo.test;
 
 import tw.framework.michaelcore.data.JdbcTemplate;
 import tw.framework.michaelcore.data.annotation.Transactional;
-import tw.framework.michaelcore.data.enumeration.TransactionPropagation;
+import tw.framework.michaelcore.data.enumeration.TransactionalPropagation;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Service;
 
@@ -15,7 +15,7 @@ public class FirstService {
     @Autowired
     private SecondService secondService;
 
-    @Transactional(propagation = TransactionPropagation.REQUIRED, rollbackFor = Exception.class)
+    @Transactional(propagation = TransactionalPropagation.REQUIRED, rollbackFor = Exception.class)
     public void goMethod() throws Exception {
 
         jdbcTemplate.execute("INSERT INTO TB_MYTEST(MYKEY, MYVALUE) VALUES ('start', 'start')");

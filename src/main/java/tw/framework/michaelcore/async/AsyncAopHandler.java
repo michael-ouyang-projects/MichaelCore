@@ -9,6 +9,7 @@ import java.util.concurrent.CompletableFuture;
 import tw.framework.michaelcore.aop.annotation.After;
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
+import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.ioc.CoreContext;
 
 @AopHandler
@@ -26,8 +27,10 @@ public class AsyncAopHandler {
                 }
                 Collections.reverse(aopHandlers);
                 executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
-            } catch (Exception e) {
-                e.printStackTrace();
+            } catch (Throwable throwable) {
+                if (needToRollback(throwable.getCause())) {
+                    TransactionalAopHandler.setRollback();
+                }
             }
             return returningObject;
         });
@@ -41,6 +44,10 @@ public class AsyncAopHandler {
                 }
             }
         }
+    }
+
+    private boolean needToRollback(Throwable throwable) {
+        return throwable instanceof RuntimeException || throwable instanceof Error || TransactionalAopHandler.getRollbackFor().isInstance(throwable);
     }
 
 }
