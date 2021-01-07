@@ -67,6 +67,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         try {
             returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
         } catch (Throwable throwable) {
+            throwable.printStackTrace();
             if (needToRollback(throwable.getCause())) {
                 TransactionalAopHandler.setRollback();
             }

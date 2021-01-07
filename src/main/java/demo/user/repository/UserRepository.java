@@ -17,7 +17,7 @@ public class UserRepository {
         return jdbcTemplate.queryList("SELECT NAME, AGE FROM TT_USER", User.class);
     }
 
-    public void addUser(User user) {
+    public void save(User user) {
         String sql = String.format("INSERT INTO TT_USER(NAME, AGE) VALUES('%s', '%s')", user.getName(), user.getAge());
         jdbcTemplate.execute(sql);
     }

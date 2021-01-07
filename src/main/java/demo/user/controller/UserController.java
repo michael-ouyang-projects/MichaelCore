@@ -8,6 +8,7 @@ import com.google.gson.Gson;
 import demo.aop.ControllerAop;
 import demo.aop.PostAop;
 import demo.user.model.User;
+import demo.user.service.UserForOrmService;
 import demo.user.service.UserService;
 import demo.user.service.UserServiceAsync;
 import tw.framework.michaelcore.aop.annotation.AopHere;
@@ -29,6 +30,9 @@ public class UserController {
     private UserService userService;
 
     @Autowired
+    private UserForOrmService userForOrmService;
+
+    @Autowired
     private UserServiceAsync userServiceAsync;
 
     @Get("/")
@@ -40,6 +44,13 @@ public class UserController {
     public Model queryAll() throws Exception {
         Model model = new Model("data.html");
         model.add("data", gson.toJson(userService.queryAll()));
+        return model;
+    }
+
+    @Get("/users-orm")
+    public Model queryAllOrm() throws Exception {
+        Model model = new Model("data.html");
+        model.add("data", gson.toJson(userForOrmService.queryAll()));
         return model;
     }
 

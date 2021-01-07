@@ -21,11 +21,11 @@ public class TransactionalAopHandler {
     private BasicDataSource dataSource;
     private static ThreadLocal<Connection> currentConnection = new ThreadLocal<>();
     private static ThreadLocal<Savepoint> currentSavepoint = new ThreadLocal<>();
-    private static ThreadLocal<Stack<TransactionalData>> TransactionalDataStack = new ThreadLocal<>();
+    private static ThreadLocal<Stack<TransactionalData>> transactionalDataStack = new ThreadLocal<>();
 
     @Before
     public void beforeTransactionalMethod() {
-        TransactionalData transactionalData = TransactionalDataStack.get().peek();
+        TransactionalData transactionalData = transactionalDataStack.get().peek();
         try {
             if (needToCreateNewTransaction(transactionalData)) {
                 createNewTransaction(transactionalData);
@@ -52,7 +52,7 @@ public class TransactionalAopHandler {
 
     @After
     public void afterTransactionalMethod() {
-        TransactionalData transactionalData = TransactionalDataStack.get().pop();
+        TransactionalData transactionalData = transactionalDataStack.get().pop();
         if (transactionalData.getConnection() != null) {
             processCommitOrRollback(transactionalData);
             currentConnection.set(getCurrentConnection());
@@ -74,7 +74,7 @@ public class TransactionalAopHandler {
     }
 
     private Connection getCurrentConnection() {
-        ListIterator<TransactionalData> TransactionalDataStackListIterator = TransactionalDataStack.get().listIterator(TransactionalDataStack.get().size());
+        ListIterator<TransactionalData> TransactionalDataStackListIterator = transactionalDataStack.get().listIterator(transactionalDataStack.get().size());
         while (TransactionalDataStackListIterator.hasPrevious()) {
             Connection connection = TransactionalDataStackListIterator.previous().getConnection();
             if (connection != null) {
@@ -87,7 +87,7 @@ public class TransactionalAopHandler {
     private void doRollbackByCondition(TransactionalData transactionalData) {
         try {
             if (transactionalData.getPropagation().equals(TransactionalPropagation.REQUIRED)) {
-                TransactionalDataStack.get().peek().setIsCommit(false);
+                transactionalDataStack.get().peek().setIsCommit(false);
             } else if (transactionalData.getPropagation().equals(TransactionalPropagation.NESTED)) {
                 currentConnection.get().rollback(currentSavepoint.get());
             }
@@ -97,10 +97,10 @@ public class TransactionalAopHandler {
     }
 
     public void addNewTransactionData(TransactionalData transactionData) {
-        if (TransactionalDataStack.get() == null) {
-            TransactionalDataStack.set(new Stack<>());
+        if (transactionalDataStack.get() == null) {
+            transactionalDataStack.set(new Stack<>());
         }
-        TransactionalDataStack.get().push(transactionData);
+        transactionalDataStack.get().push(transactionData);
     }
 
     static Connection getConnection() {
@@ -108,11 +108,13 @@ public class TransactionalAopHandler {
     }
 
     public static Class<? extends Throwable> getRollbackFor() {
-        return TransactionalDataStack.get().peek().getRollbackFor();
+        return transactionalDataStack.get().peek().getRollbackFor();
     }
 
     public static void setRollback() {
-        TransactionalDataStack.get().peek().setIsCommit(false);
+        if (transactionalDataStack.get() != null) {
+            transactionalDataStack.get().peek().setIsCommit(false);
+        }
     }
 
 }

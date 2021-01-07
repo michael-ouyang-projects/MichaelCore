@@ -4,6 +4,7 @@ import java.lang.annotation.Annotation;
 
 import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.data.annotation.Repository;
+import tw.framework.michaelcore.data.orm.annotation.OrmRepository;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Service;
 import tw.framework.michaelcore.mvc.annotation.Controller;
@@ -11,7 +12,13 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 
 public enum Components {
 
-    COMPONENT(Component.class), RESTCONTROLLER(RestController.class), CONTROLLER(Controller.class), SERVICE(Service.class), REPOSITORY(Repository.class), AOPHANDLER(AopHandler.class);
+    COMPONENT(Component.class),
+    RESTCONTROLLER(RestController.class),
+    CONTROLLER(Controller.class),
+    SERVICE(Service.class),
+    REPOSITORY(Repository.class),
+    ORMREPOSITORY(OrmRepository.class),
+    AOPHANDLER(AopHandler.class);
 
     private Class<? extends Annotation> componentClass;
 

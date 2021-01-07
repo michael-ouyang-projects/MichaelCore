@@ -22,11 +22,11 @@ public class UserService {
 
     public void addUser(User user) {
         AopHelper.executeInnerMethodWithAop(UserService.class).testInnerMethodCall();
-        userRepository.addUser(user);
+        userRepository.save(user);
     }
 
     public void addUserWithTransactionalRollback(User user) {
-        userRepository.addUser(user);
+        userRepository.save(user);
     }
 
     @AopHere(TestInnerMethodCallAop.class)

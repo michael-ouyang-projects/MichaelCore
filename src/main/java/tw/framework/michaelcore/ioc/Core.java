@@ -9,11 +9,14 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.annotation.Transactional;
+import tw.framework.michaelcore.data.orm.OrmAopHandler;
+import tw.framework.michaelcore.data.orm.annotation.OrmRepository;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
@@ -237,7 +240,11 @@ public class Core {
     private static void initializeAOP() throws Exception {
         for (Class<?> clazz : CoreContext.getFqcnClasses()) {
             if (needToCreateProxy(clazz)) {
-                addProxyBeanToContainer(clazz, createProxy(clazz));
+                if (clazz.isAnnotationPresent(OrmRepository.class)) {
+                    addProxyBeanToContainer(clazz, createProxy(clazz, OrmAopHandler.class));
+                } else {
+                    addProxyBeanToContainer(clazz, createProxy(clazz, MichaelCoreAopHandler.class));
+                }
             }
         }
     }
@@ -247,7 +254,7 @@ public class Core {
     }
 
     static boolean aopOnClass(Class<?> clazz) {
-        if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class) || clazz.isAnnotationPresent(Async.class)) {
+        if (clazz.isAnnotationPresent(AopHere.class) || clazz.isAnnotationPresent(Transactional.class) || clazz.isAnnotationPresent(Async.class) || clazz.isAnnotationPresent(OrmRepository.class)) {
             return true;
         }
         return false;
@@ -262,10 +269,10 @@ public class Core {
         return false;
     }
 
-    static Object createProxy(Class<?> clazz) {
+    static Object createProxy(Class<?> clazz, Class<? extends Callback> aopHandlerClass) {
         Enhancer enhancer = new Enhancer();
         enhancer.setSuperclass(clazz);
-        enhancer.setCallback(CoreContext.getBean(MichaelCoreAopHandler.class));
+        enhancer.setCallback(CoreContext.getBean(aopHandlerClass));
         return enhancer.create();
     }
 

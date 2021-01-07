@@ -6,12 +6,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
+
 public class CoreContext {
 
     private static List<Class<?>> fqcnClasses;
     private final static Map<String, String> properties = new HashMap<>();
     private final static Map<String, Object> beanFactory = new HashMap<>();
-    private final static Map<String, Object> realBeans = new HashMap<>();
+    private final static Map<String, Object> realBeanFactory = new HashMap<>();
 
     public static List<Class<?>> getFqcnClasses() {
         return fqcnClasses;
@@ -82,8 +84,8 @@ public class CoreContext {
     }
 
     public static Object getProxyAndAddRealBeanToContainer(Class<?> clazz, Object realBean) {
-        Object proxy = Core.createProxy(clazz);
-        realBeans.put(proxy.getClass().getName(), realBean);
+        Object proxy = Core.createProxy(clazz, MichaelCoreAopHandler.class);
+        realBeanFactory.put(proxy.getClass().getName(), realBean);
         return proxy;
     }
 
@@ -101,7 +103,7 @@ public class CoreContext {
     }
 
     public static Object getRealBeanByProxy(Object proxy) {
-        return realBeans.get(proxy.getClass().getName());
+        return realBeanFactory.get(proxy.getClass().getName());
     }
 
     public static void addBean(String name, Object object) {
@@ -116,7 +118,7 @@ public class CoreContext {
 
     public static void addProxyBean(String name, Object proxy) {
         Object realBean = beanFactory.put(name, proxy);
-        realBeans.put(proxy.getClass().getName(), realBean);
+        realBeanFactory.put(proxy.getClass().getName(), realBean);
     }
 
     public static boolean containsBean(String name) {
