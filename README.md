@@ -4,6 +4,6 @@
 3. AOP
 4. MVC
 5. Transactional
-6. Async
-7. Mocking (In Progress)
-8. ORM (In Progress)
+6. ORM
+7. Async
+8. Mocking (In Progress)
