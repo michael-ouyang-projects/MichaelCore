@@ -50,36 +50,51 @@ public class Core {
     }
 
     private static void readFqcnsToContainer() throws IOException {
-        String applicationPath = getApplicationPath();
-        List<Class<?>> fqcnClasses = Files.walk(Paths.get(applicationPath))
+        Path targetDirectoryPath = getTargetDirectoryPath();
+        List<Class<?>> fqcnClasses = Files.walk(targetDirectoryPath)
                 .filter(Files::isRegularFile)
-                .filter(file -> {
-                    return notInDefaultPackage(file, applicationPath) && isClassFile(file);
-                }).map(classFile -> {
-                    return toFqcn(classFile, applicationPath);
+                .filter(classPath -> {
+                    if (isJUnitTest()) {
+                        return notInDefaultPackage(classPath, targetDirectoryPath.toString()) && isClassFile(classPath);
+                    } else {
+                        return notInDefaultPackage(classPath, targetDirectoryPath.toString()) && isClassFile(classPath) && !classPath.toString().contains("target\\test-classes");
+                    }
+                }).map(classPath -> {
+                    return toFqcn(classPath, targetDirectoryPath.toString());
                 }).map(fqcn -> {
                     return getClassByFqcn(fqcn);
                 }).collect(Collectors.toList());
         CoreContext.setFqcnClasses(fqcnClasses);
     }
 
-    private static String getApplicationPath() {
-        String applicationPath = Core.class.getResource("/").getPath();
+    private static Path getTargetDirectoryPath() throws IOException {
+        String resourcePath = Core.class.getResource("/").getPath();
         boolean isWindowsSystem = Boolean.parseBoolean(CoreContext.getProperties("isWindowsSystem"));
-        return isWindowsSystem ? applicationPath.substring(1) : applicationPath;
+        resourcePath = isWindowsSystem ? resourcePath.substring(1) : resourcePath;
+        return Paths.get(resourcePath, "..").toRealPath();
     }
 
-    private static boolean notInDefaultPackage(Path file, String applicationPath) {
-        return file.getParent().toString().replace("\\", "/").split(applicationPath).length == 2;
+    private static boolean isJUnitTest() {
+        for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+            if (element.getClassName().startsWith("org.junit")) {
+                return true;
+            }
+        }
+        return false;
     }
 
-    private static boolean isClassFile(Path file) {
-        return file.getFileName().toString().endsWith(".class");
+    private static boolean notInDefaultPackage(Path classPath, String targetDirectory) {
+        return classPath.getParent().toString().replace("\\", "/").split(targetDirectory.replace("\\", "/")).length == 2;
     }
 
-    private static String toFqcn(Path classFile, String applicationPath) {
-        String packageName = classFile.getParent().toString().replace("\\", "/").split(applicationPath)[1].replace("/", ".");
-        String className = classFile.getFileName().toString().split("\\.class")[0];
+    private static boolean isClassFile(Path path) {
+        return path.getFileName().toString().endsWith(".class");
+    }
+
+    private static String toFqcn(Path classPath, String targetDirectory) {
+        String packageName = classPath.getParent().toString().replace("\\", "/").split(targetDirectory.replace("\\", "/"))[1];
+        packageName = packageName.substring(packageName.indexOf("/", packageName.indexOf("/") + 1) + 1).replace("/", ".");
+        String className = classPath.getFileName().toString().split("\\.class")[0];
         return String.format("%s.%s", packageName, className);
     }
 
@@ -95,6 +110,7 @@ public class Core {
     public static void start() {
         try {
             initializeCore();
+            System.out.println("MichaelCore Start!");
         } catch (Exception e) {
             System.err.println("initializeCore() Error!");
             e.printStackTrace();
@@ -178,7 +194,7 @@ public class Core {
         return true;
     }
 
-    static String getBeanName(Class<?> clazz) {
+    public static String getBeanName(Class<?> clazz) {
         String beanName = clazz.getName();
         if (isComponentClass(clazz)) {
             beanName = getComponentBeanName(clazz.getAnnotation(Component.class), clazz);

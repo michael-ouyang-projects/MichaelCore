@@ -5,13 +5,10 @@ import java.util.concurrent.CompletableFuture;
 
 import com.google.gson.Gson;
 
-import demo.aop.ControllerAop;
-import demo.aop.PostAop;
 import demo.user.model.User;
 import demo.user.service.UserForOrmService;
 import demo.user.service.UserService;
 import demo.user.service.UserServiceAsync;
-import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.mvc.Model;
 import tw.framework.michaelcore.mvc.annotation.Controller;
@@ -20,7 +17,6 @@ import tw.framework.michaelcore.mvc.annotation.Post;
 import tw.framework.michaelcore.mvc.annotation.RequestParam;
 
 @Controller
-@AopHere(ControllerAop.class)
 public class UserController {
 
     @Autowired
@@ -78,7 +74,6 @@ public class UserController {
     }
 
     @Post("/user/add")
-    @AopHere(PostAop.class)
     public Model addUserByPost(@RequestParam("name") String name, @RequestParam("age") int age) {
         userService.addUserWithTransactionalRollback(new User(name, age));
         Model model = new Model("success.html");
