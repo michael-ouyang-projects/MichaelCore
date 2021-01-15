@@ -14,7 +14,7 @@ public class UserRepository {
     private JdbcTemplate jdbcTemplate;
 
     public List<User> queryAll() {
-        return jdbcTemplate.queryList("SELECT NAME, AGE FROM TT_USER", User.class);
+        return jdbcTemplate.queryObjectList("SELECT NAME, AGE FROM TT_USER", User.class);
     }
 
     public void save(User user) {

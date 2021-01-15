@@ -23,7 +23,7 @@ public class OrmAopHandler implements InvocationHandler {
                 Class<?> repositoryClazz = Class.forName(proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0]);
                 String table = repositoryClazz.getAnnotation(OrmRepository.class).table();
                 Class<?> entityClazz = repositoryClazz.getAnnotation(OrmRepository.class).entity();
-                return jdbcTemplate.queryList("SELECT * FROM " + table, entityClazz);
+                return jdbcTemplate.queryObjectList("SELECT * FROM " + table, entityClazz);
             }
         }
         return method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
