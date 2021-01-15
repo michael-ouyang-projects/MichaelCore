@@ -3,7 +3,8 @@
 2. IoC
 3. AOP
 4. MVC
-5. Transactional
-6. ORM
+5. ORM
+6. Transactional
 7. Async
-8. Mocking (In Progress)
+8. Caching (In Progress)
+9. Mocking (In Progress)
