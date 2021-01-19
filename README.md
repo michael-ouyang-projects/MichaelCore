@@ -1,4 +1,4 @@
-# Java-Framework-Implementation
+# MichaelCore
 1. Embedded Web Server
 2. IoC
 3. AOP
