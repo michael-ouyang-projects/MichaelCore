@@ -75,7 +75,7 @@ public class UserController {
 
     @Post("/user/add")
     public Model addUserByPost(@RequestParam("name") String name, @RequestParam("age") int age) {
-        userService.addUserWithTransactionalRollback(new User(name, age));
+        userService.addUser(new User(name, age));
         Model model = new Model("success.html");
         model.add("name", name);
         model.add("age", age);
@@ -83,3 +83,4 @@ public class UserController {
     }
 
 }
+
