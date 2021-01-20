@@ -78,7 +78,7 @@ public class MvcCore {
 
     private void initializeRequestMapping() throws Exception {
         requestMapping = createRequestMapping();
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isControllerOrRestController(clazz)) {
                 mapUrlToMethod(clazz);
             }

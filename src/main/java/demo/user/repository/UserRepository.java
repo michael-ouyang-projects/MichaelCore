@@ -22,8 +22,4 @@ public class UserRepository {
         jdbcTemplate.execute(sql);
     }
 
-    public void error() {
-        jdbcTemplate.execute("INSERT INTO UNKNOWN_TABLE(NAME, AGE) VALUES('HI', 'HELLO')");
-    }
-
 }

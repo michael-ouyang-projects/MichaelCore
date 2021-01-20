@@ -3,6 +3,7 @@ package tw.framework.michaelcore.test.data;
 import java.math.BigDecimal;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +20,11 @@ public class TestJdbcTemplate {
     @BeforeAll
     public static void beforeAll() {
         Core.start();
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        Core.clean();
     }
 
     @BeforeEach

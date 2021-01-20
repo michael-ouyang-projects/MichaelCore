@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.List;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,11 @@ public class TestPropagation {
     @BeforeAll
     public static void beforeAll() {
         Core.start();
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        Core.clean();
     }
 
     @BeforeEach

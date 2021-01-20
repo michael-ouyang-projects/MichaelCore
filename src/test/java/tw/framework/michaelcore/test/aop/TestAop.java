@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,6 +22,11 @@ public class TestAop {
     public static void beforeAll() {
         Core.start();
         System.setOut(new PrintStream(outputStream));
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        Core.clean();
     }
 
     @BeforeEach

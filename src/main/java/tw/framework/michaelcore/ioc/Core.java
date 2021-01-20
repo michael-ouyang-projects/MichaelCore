@@ -32,7 +32,7 @@ public class Core {
     static {
         try {
             readPropertiesToContainer();
-            readFqcnsToContainer();
+            readComponentsToContainer(isJUnitTest());
         } catch (Exception e) {
             System.err.println("Core Initial Error!");
             e.printStackTrace();
@@ -40,38 +40,13 @@ public class Core {
     }
 
     private static void readPropertiesToContainer() throws IOException {
-        List<String> properties = Files.readAllLines(Paths.get("resources/application.properties"));
-        properties.forEach(property -> {
-            if (property.trim().length() > 0) {
-                String[] keyValue = property.split("=");
-                CoreContext.addProperties(keyValue[0], keyValue[1]);
+        List<String> propertyLines = Files.readAllLines(Paths.get("resources/application.properties"));
+        propertyLines.forEach(propertyLine -> {
+            if (propertyLine.trim().length() > 0) {
+                String[] keyValue = propertyLine.split("=");
+                CoreContext.addProperty(keyValue[0], keyValue[1]);
             }
         });
-    }
-
-    private static void readFqcnsToContainer() throws IOException {
-        Path targetDirectoryPath = getTargetDirectoryPath();
-        List<Class<?>> fqcnClasses = Files.walk(targetDirectoryPath)
-                .filter(Files::isRegularFile)
-                .filter(classPath -> {
-                    if (isJUnitTest()) {
-                        return notInDefaultPackage(classPath, targetDirectoryPath.toString()) && isClassFile(classPath);
-                    } else {
-                        return notInDefaultPackage(classPath, targetDirectoryPath.toString()) && isClassFile(classPath) && !classPath.toString().contains("target\\test-classes");
-                    }
-                }).map(classPath -> {
-                    return toFqcn(classPath, targetDirectoryPath.toString());
-                }).map(fqcn -> {
-                    return getClassByFqcn(fqcn);
-                }).collect(Collectors.toList());
-        CoreContext.setFqcnClasses(fqcnClasses);
-    }
-
-    private static Path getTargetDirectoryPath() throws IOException {
-        String resourcePath = Core.class.getResource("/").getPath();
-        boolean isWindowsSystem = Boolean.parseBoolean(CoreContext.getProperties("isWindowsSystem"));
-        resourcePath = isWindowsSystem ? resourcePath.substring(1) : resourcePath;
-        return Paths.get(resourcePath, "..").toRealPath();
     }
 
     private static boolean isJUnitTest() {
@@ -83,19 +58,39 @@ public class Core {
         return false;
     }
 
-    private static boolean notInDefaultPackage(Path classPath, String targetDirectory) {
-        return classPath.getParent().toString().replace("\\", "/").split(targetDirectory.replace("\\", "/")).length == 2;
+    private static void readComponentsToContainer(boolean isJUnitTest) throws IOException {
+        Path targetPath = getTargetPath(isJUnitTest);
+        List<Class<?>> componentClasses = Files.walk(targetPath)
+                .filter(Files::isRegularFile)
+                .filter(filePath -> {
+                    return isClassFile(filePath);
+                }).map(classFile -> {
+                    return toFqcn(classFile, targetPath, isJUnitTest);
+                }).map(fqcn -> {
+                    return getClassByFqcn(fqcn);
+                }).collect(Collectors.toList());
+        CoreContext.setComponentClasses(componentClasses);
+    }
+
+    private static Path getTargetPath(boolean isJUnitTest) throws IOException {
+        String targetClassesPath = Core.class.getResource("/").getPath();
+        targetClassesPath = System.getProperty("os.name").contains("Windows") ? targetClassesPath.substring(1) : targetClassesPath;
+        if (isJUnitTest) {
+            return Paths.get(targetClassesPath, "..").toRealPath();
+        }
+        return Paths.get(targetClassesPath);
     }
 
     private static boolean isClassFile(Path path) {
         return path.getFileName().toString().endsWith(".class");
     }
 
-    private static String toFqcn(Path classPath, String targetDirectory) {
-        String packageName = classPath.getParent().toString().replace("\\", "/").split(targetDirectory.replace("\\", "/"))[1];
-        packageName = packageName.substring(packageName.indexOf("/", packageName.indexOf("/") + 1) + 1).replace("/", ".");
-        String className = classPath.getFileName().toString().split("\\.class")[0];
-        return String.format("%s.%s", packageName, className);
+    private static String toFqcn(Path classPath, Path targetPath, boolean isJUnitTest) {
+        String fractionalClassFile = classPath.toString().replace("\\", "/").split(targetPath.toString().replace("\\", "/"))[1].substring(1);
+        if (isJUnitTest) {
+            return fractionalClassFile.substring(fractionalClassFile.indexOf("/") + 1).split(".class")[0].replace("/", ".");
+        }
+        return fractionalClassFile.split(".class")[0].replace("/", ".");
     }
 
     private static Class<?> getClassByFqcn(String fqcn) {
@@ -103,13 +98,18 @@ public class Core {
             return Class.forName(fqcn);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
-            return null;
         }
+        return null;
     }
 
     public static void start() {
         try {
-            initializeCore();
+            initializeIoC();
+            initializeValueProperties();
+            initializeIoCForBean();
+            initializeAOP();
+            initializeAutowired();
+            executeStartupCode();
             System.out.println("MichaelCore Start!");
         } catch (Exception e) {
             System.err.println("initializeCore() Error!");
@@ -117,17 +117,8 @@ public class Core {
         }
     }
 
-    private static void initializeCore() throws Exception {
-        initializeIoC();
-        initializeValueProperties();
-        initializeIoCForBean();
-        initializeAOP();
-        initializeAutowired();
-        executeStartupCode();
-    }
-
     private static void initializeIoC() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isManagedBeanClass(clazz)) {
                 processIoC(clazz);
             }
@@ -180,7 +171,7 @@ public class Core {
     }
 
     private static void initializeValueProperties() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
                 insertValueToBean(clazz, CoreContext.getBean(getBeanName(clazz)));
             }
@@ -212,7 +203,7 @@ public class Core {
     }
 
     private static void initializeIoCForBean() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isConfigurationClass(clazz)) {
                 processConfigurationClass(clazz);
             }
@@ -254,7 +245,7 @@ public class Core {
     }
 
     private static void initializeAOP() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (needToCreateProxy(clazz)) {
                 if (clazz.isAnnotationPresent(OrmRepository.class)) {
                     addProxyBeanToContainer(clazz, createProxy(clazz, OrmAopHandler.class));
@@ -297,7 +288,7 @@ public class Core {
     }
 
     private static void initializeAutowired() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
                 autowireDependencies(clazz, CoreContext.getRealBeanByClass(clazz));
             }
@@ -328,7 +319,7 @@ public class Core {
     }
 
     private static void executeStartupCode() throws Exception {
-        for (Class<?> clazz : CoreContext.getFqcnClasses()) {
+        for (Class<?> clazz : CoreContext.getComponentClasses()) {
             if (isConfigurationClass(clazz)) {
                 MultiValueTreeMap<Integer, Method> map = collectMethodsWithStartupAnnotation(clazz);
                 executeMethodsWithStartupAnnotationByOrder(map, CoreContext.getBean(clazz));
@@ -355,6 +346,10 @@ public class Core {
                 method.invoke(configurationBean);
             }
         }
+    }
+
+    public static void clean() {
+        CoreContext.clean();
     }
 
 }

@@ -10,24 +10,29 @@ import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 
 public class CoreContext {
 
-    private static List<Class<?>> fqcnClasses;
+    private static List<Class<?>> componentClasses;
     private final static Map<String, String> properties = new HashMap<>();
     private final static Map<String, Object> beanFactory = new HashMap<>();
     private final static Map<String, Object> realBeanFactory = new HashMap<>();
 
-    public static List<Class<?>> getFqcnClasses() {
-        return fqcnClasses;
+    static void clean() {
+        beanFactory.clear();
+        realBeanFactory.clear();
     }
 
-    static void setFqcnClasses(List<Class<?>> fqcns) {
-        CoreContext.fqcnClasses = fqcns;
+    public static List<Class<?>> getComponentClasses() {
+        return componentClasses;
+    }
+
+    static void setComponentClasses(List<Class<?>> componentClasses) {
+        CoreContext.componentClasses = componentClasses;
     }
 
     public static String getProperties(String key) {
         return properties.get(key);
     }
 
-    static void addProperties(String key, String value) {
+    static void addProperty(String key, String value) {
         if (value != null) {
             properties.put(key, value);
         }

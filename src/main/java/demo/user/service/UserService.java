@@ -21,8 +21,4 @@ public class UserService {
         userRepository.save(user);
     }
 
-    public void addUserWithTransactionalRollback(User user) {
-        userRepository.save(user);
-    }
-
 }
