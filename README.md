@@ -1,6 +1,7 @@
 # MichaelCore
 
 I would like to create a java framework that can easily overrided by programmers.
+It including below features so far.
 
 1. Embedded Web Server
 2. IoC
