@@ -40,10 +40,10 @@ public class Core {
     }
 
     private static void readPropertiesToContainer() throws IOException {
-        List<String> propertyLines = Files.readAllLines(Paths.get("resources/application.properties"));
-        propertyLines.forEach(propertyLine -> {
-            if (propertyLine.trim().length() > 0) {
-                String[] keyValue = propertyLine.split("=");
+        List<String> propertyStrings = Files.readAllLines(Paths.get("resources/application.properties"));
+        propertyStrings.forEach(propertyString -> {
+            if (propertyString.trim().length() > 0) {
+                String[] keyValue = propertyString.split("=");
                 CoreContext.addProperty(keyValue[0], keyValue[1]);
             }
         });
@@ -59,38 +59,33 @@ public class Core {
     }
 
     private static void readComponentsToContainer(boolean isJUnitTest) throws IOException {
-        Path targetPath = getTargetPath(isJUnitTest);
-        List<Class<?>> componentClasses = Files.walk(targetPath)
-                .filter(Files::isRegularFile)
-                .filter(filePath -> {
-                    return isClassFile(filePath);
-                }).map(classFile -> {
-                    return toFqcn(classFile, targetPath, isJUnitTest);
-                }).map(fqcn -> {
-                    return getClassByFqcn(fqcn);
-                }).collect(Collectors.toList());
-        CoreContext.setComponentClasses(componentClasses);
+        Path sourceCodeDirectoryPath = getSourceCodeDirectoryPath(isJUnitTest);
+        CoreContext.setComponentClasses(Files.walk(sourceCodeDirectoryPath)
+                .filter(Core::isClassFile)
+                .map(classPath -> {
+                    return classPathToFqcn(classPath, sourceCodeDirectoryPath, isJUnitTest);
+                }).map(Core::getClassByFqcn).collect(Collectors.toList()));
     }
 
-    private static Path getTargetPath(boolean isJUnitTest) throws IOException {
-        String targetClassesPath = Core.class.getResource("/").getPath();
-        targetClassesPath = System.getProperty("os.name").contains("Windows") ? targetClassesPath.substring(1) : targetClassesPath;
+    private static Path getSourceCodeDirectoryPath(boolean isJUnitTest) throws IOException {
+        String sourceCodeDirectoryPath = Core.class.getResource("/").getPath();
+        sourceCodeDirectoryPath = System.getProperty("os.name").contains("Windows") ? sourceCodeDirectoryPath.substring(1) : sourceCodeDirectoryPath;
         if (isJUnitTest) {
-            return Paths.get(targetClassesPath, "..").toRealPath();
+            return Paths.get(sourceCodeDirectoryPath, "..").toRealPath();
         }
-        return Paths.get(targetClassesPath);
+        return Paths.get(sourceCodeDirectoryPath);
     }
 
     private static boolean isClassFile(Path path) {
-        return path.getFileName().toString().endsWith(".class");
+        return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".class");
     }
 
-    private static String toFqcn(Path classPath, Path targetPath, boolean isJUnitTest) {
-        String fractionalClassFile = classPath.toString().replace("\\", "/").split(targetPath.toString().replace("\\", "/"))[1].substring(1);
+    private static String classPathToFqcn(Path classPath, Path sourceCodeDirectoryPath, boolean isJUnitTest) {
+        String portionClassPath = classPath.toString().replace("\\", "/").split(sourceCodeDirectoryPath.toString().replace("\\", "/"))[1].substring(1);
         if (isJUnitTest) {
-            return fractionalClassFile.substring(fractionalClassFile.indexOf("/") + 1).split(".class")[0].replace("/", ".");
+            return portionClassPath.substring(portionClassPath.indexOf("/") + 1).split(".class")[0].replace("/", ".");
         }
-        return fractionalClassFile.split(".class")[0].replace("/", ".");
+        return portionClassPath.split(".class")[0].replace("/", ".");
     }
 
     private static Class<?> getClassByFqcn(String fqcn) {

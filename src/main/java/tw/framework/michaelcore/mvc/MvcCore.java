@@ -5,6 +5,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -31,6 +32,8 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 @Configuration
 public class MvcCore {
 
+    private ServerSocket serverSocket;
+
     @Value
     private String listeningPort;
 
@@ -50,14 +53,25 @@ public class MvcCore {
         return new Gson();
     }
 
+    public void clean() {
+        try {
+            serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @ExecuteAfterContextStartup(order = 2)
     public void startServer() {
         ExecutorService executor = Executors.newCachedThreadPool();
         executor.submit(() -> {
-            try (ServerSocket serverSocket = new ServerSocket(Integer.parseInt(listeningPort))) {
+            try {
+                serverSocket = new ServerSocket(Integer.parseInt(listeningPort));
                 while (true) {
                     executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }
+            } catch (SocketException e) {
+                System.err.println("Shutdown ServerSocket.");
             } catch (Exception e) {
                 e.printStackTrace();
             }

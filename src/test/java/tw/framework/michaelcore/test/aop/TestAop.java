@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.mvc.MvcCore;
 
 public class TestAop {
 
@@ -26,6 +27,7 @@ public class TestAop {
 
     @AfterAll
     public static void afterAll() {
+        CoreContext.getBean(MvcCore.class).clean();
         Core.clean();
     }
 

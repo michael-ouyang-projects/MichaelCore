@@ -10,6 +10,7 @@ import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
+import tw.framework.michaelcore.mvc.MvcCore;
 
 @Configuration
 public class TestIoC {
@@ -31,6 +32,7 @@ public class TestIoC {
 
     @AfterAll
     public static void afterAll() {
+        CoreContext.getBean(MvcCore.class).clean();
         Core.clean();
     }
 
