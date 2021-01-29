@@ -12,23 +12,22 @@ import org.junit.jupiter.api.Test;
 
 import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
-import tw.framework.michaelcore.mvc.MvcCore;
 
 public class TestAop {
 
-    private final static ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    private final MyComponent component = CoreContext.getBean("myComponent", MyComponent.class);
+    private static CoreContext coreContext;
+    private static ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    private MyComponent component = coreContext.getBean("myComponent", MyComponent.class);
 
     @BeforeAll
     public static void beforeAll() {
-        Core.start();
+        coreContext = Core.start();
         System.setOut(new PrintStream(outputStream));
     }
 
     @AfterAll
     public static void afterAll() {
-        CoreContext.getBean(MvcCore.class).clean();
-        Core.clean();
+        coreContext.close();
     }
 
     @BeforeEach

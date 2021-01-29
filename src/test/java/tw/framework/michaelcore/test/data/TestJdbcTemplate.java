@@ -12,21 +12,20 @@ import org.junit.jupiter.api.Test;
 import tw.framework.michaelcore.data.JdbcTemplate;
 import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
-import tw.framework.michaelcore.mvc.MvcCore;
 
 public class TestJdbcTemplate {
 
-    private final JdbcTemplate jdbcTemplate = CoreContext.getBean(JdbcTemplate.class);
+    private static CoreContext coreContext;
+    private JdbcTemplate jdbcTemplate = (JdbcTemplate) coreContext.getBean(JdbcTemplate.class.getName());
 
     @BeforeAll
     public static void beforeAll() {
-        Core.start();
+        coreContext = Core.start();
     }
 
     @AfterAll
     public static void afterAll() {
-        CoreContext.getBean(MvcCore.class).clean();
-        Core.clean();
+        coreContext.close();
     }
 
     @BeforeEach

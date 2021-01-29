@@ -9,7 +9,6 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import net.sf.cglib.proxy.Callback;
 import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
@@ -21,7 +20,7 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
-import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 import tw.framework.michaelcore.ioc.enumeration.Components;
@@ -32,7 +31,7 @@ public class Core {
     static {
         try {
             readPropertiesToContainer();
-            readComponentsToContainer(isJUnitTest());
+            scanClassesToContainer(isJUnitTest());
         } catch (Exception e) {
             System.err.println("Core Initial Error!");
             e.printStackTrace();
@@ -58,16 +57,17 @@ public class Core {
         return false;
     }
 
-    private static void readComponentsToContainer(boolean isJUnitTest) throws IOException {
+    private static void scanClassesToContainer(boolean isJUnitTest) throws IOException {
         Path sourceCodeDirectoryPath = getSourceCodeDirectoryPath(isJUnitTest);
-        CoreContext.setComponentClasses(Files.walk(sourceCodeDirectoryPath)
+        CoreContext.setClasses(Files.walk(sourceCodeDirectoryPath)
                 .filter(Core::isClassFile)
-                .map(classPath -> {
-                    return classPathToFqcn(classPath, sourceCodeDirectoryPath, isJUnitTest);
+                .map(classFilePath -> {
+                    return classFilePathToFqcn(classFilePath, sourceCodeDirectoryPath, isJUnitTest);
                 }).map(Core::getClassByFqcn).collect(Collectors.toList()));
     }
 
     private static Path getSourceCodeDirectoryPath(boolean isJUnitTest) throws IOException {
+        /* /D:/eclipse-workspace-git/MichaelCore/target/classes/ */
         String sourceCodeDirectoryPath = Core.class.getResource("/").getPath();
         sourceCodeDirectoryPath = System.getProperty("os.name").contains("Windows") ? sourceCodeDirectoryPath.substring(1) : sourceCodeDirectoryPath;
         if (isJUnitTest) {
@@ -80,8 +80,9 @@ public class Core {
         return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".class");
     }
 
-    private static String classPathToFqcn(Path classPath, Path sourceCodeDirectoryPath, boolean isJUnitTest) {
-        String portionClassPath = classPath.toString().replace("\\", "/").split(sourceCodeDirectoryPath.toString().replace("\\", "/"))[1].substring(1);
+    private static String classFilePathToFqcn(Path classFilePath, Path sourceCodeDirectoryPath, boolean isJUnitTest) {
+        /* tw/framework/michaelcore/ioc/Core.class */
+        String portionClassPath = classFilePath.toString().replace("\\", "/").split(sourceCodeDirectoryPath.toString().replace("\\", "/"))[1].substring(1);
         if (isJUnitTest) {
             return portionClassPath.substring(portionClassPath.indexOf("/") + 1).split(".class")[0].replace("/", ".");
         }
@@ -97,93 +98,68 @@ public class Core {
         return null;
     }
 
-    public static void start() {
+    public static CoreContext start() {
+        CoreContext coreContext = new CoreContext();
         try {
-            initializeIoC();
-            initializeValueProperties();
-            initializeIoCForBean();
-            initializeAOP();
-            initializeAutowired();
-            executeStartupCode();
+            initializeIoC(coreContext);
+            initializeValueProperties(coreContext);
+            initializeIoCForBean(coreContext);
+            initializeAOP(coreContext);
+            initializeAutowired(coreContext);
+            executeStartupCode(coreContext);
             System.out.println("MichaelCore Start!");
         } catch (Exception e) {
             System.err.println("initializeCore() Error!");
             e.printStackTrace();
         }
+        return coreContext;
     }
 
-    private static void initializeIoC() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
-            if (isManagedBeanClass(clazz)) {
-                processIoC(clazz);
+    private static void initializeIoC(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
+            if (Components.isComponentClass(clazz)) {
+                processIoC(coreContext, clazz);
             }
         }
     }
 
-    private static boolean isManagedBeanClass(Class<?> clazz) {
-        return isConfigurationClass(clazz) || Components.isComponentsClass(clazz);
-    }
-
-    private static boolean isConfigurationClass(Class<?> clazz) {
-        return clazz.isAnnotationPresent(Configuration.class);
-    }
-
-    private static void processIoC(Class<?> clazz) throws Exception {
-        if (isComponentClass(clazz)) {
+    private static void processIoC(CoreContext coreContext, Class<?> clazz) throws Exception {
+        if (clazz.isAnnotationPresent(Component.class)) {
             Component component = clazz.getAnnotation(Component.class);
-            processComponentClass(component, getComponentBeanName(component, clazz), clazz);
+            String componentName = getComponentName(component, clazz);
+            if (component.scope().equals(BeanScope.SINGLETON)) {
+                coreContext.addBean(componentName, clazz.getDeclaredConstructor().newInstance());
+            } else if (component.scope().equals(BeanScope.PROTOTYPE)) {
+                coreContext.addBean(componentName, clazz.getDeclaredConstructor());
+            }
         } else {
-            addBeanToContainer(clazz);
+            coreContext.addBean(clazz.getName(), clazz.getDeclaredConstructor().newInstance());
         }
     }
 
-    private static boolean isComponentClass(Class<?> clazz) {
-        return clazz.isAnnotationPresent(Component.class);
-    }
-
-    private static String getComponentBeanName(Component component, Class<?> clazz) {
+    static String getComponentName(Component component, Class<?> clazz) {
         return "".equals(component.value()) ? clazz.getName() : component.value();
     }
 
-    private static void processComponentClass(Component component, String componentName, Class<?> clazz) throws Exception {
-        if (component.scope().equals(BeanScope.SINGLETON)) {
-            addBeanToContainer(componentName, clazz);
-        } else if (component.scope().equals(BeanScope.PROTOTYPE)) {
-            addConstructorToContainer(componentName, clazz);
-        }
-    }
-
-    private static void addBeanToContainer(String beanName, Class<?> clazz) throws Exception {
-        CoreContext.addBean(beanName, clazz.getDeclaredConstructor().newInstance());
-    }
-
-    private static void addConstructorToContainer(String beanName, Class<?> clazz) throws Exception {
-        CoreContext.addBean(beanName, clazz.getDeclaredConstructor());
-    }
-
-    private static void addBeanToContainer(Class<?> clazz) throws Exception {
-        CoreContext.addBean(clazz.getName(), clazz.getDeclaredConstructor().newInstance());
-    }
-
-    private static void initializeValueProperties() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
-            if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
-                insertValueToBean(clazz, CoreContext.getBean(getBeanName(clazz)));
+    private static void initializeValueProperties(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
+            if (Components.isComponentClass(clazz) && isSingletonBean(clazz)) {
+                insertValueToBean(clazz, coreContext.getBean(getBeanName(clazz)));
             }
         }
     }
 
     private static boolean isSingletonBean(Class<?> clazz) {
-        if (isComponentClass(clazz)) {
+        if (clazz.isAnnotationPresent(Component.class)) {
             return clazz.getAnnotation(Component.class).scope().equals(BeanScope.SINGLETON);
         }
         return true;
     }
 
-    public static String getBeanName(Class<?> clazz) {
+    static String getBeanName(Class<?> clazz) {
         String beanName = clazz.getName();
-        if (isComponentClass(clazz)) {
-            beanName = getComponentBeanName(clazz.getAnnotation(Component.class), clazz);
+        if (clazz.isAnnotationPresent(Component.class)) {
+            beanName = getComponentName(clazz.getAnnotation(Component.class), clazz);
         }
         return beanName;
     }
@@ -192,38 +168,35 @@ public class Core {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Value.class)) {
                 field.setAccessible(true);
-                field.set(bean, CoreContext.getProperties(field.getName()));
+                field.set(bean, CoreContext.getProperty(field.getName()));
             }
         }
     }
 
-    private static void initializeIoCForBean() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
-            if (isConfigurationClass(clazz)) {
-                processConfigurationClass(clazz);
+    private static void initializeIoCForBean(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
+            if (clazz.isAnnotationPresent(Configuration.class)) {
+                processConfigurationClass(coreContext, clazz);
             }
         }
     }
 
-    private static void processConfigurationClass(Class<?> configurationClazz) throws Exception {
-        Object configurationBean = CoreContext.getBean(configurationClazz.getName());
+    private static void processConfigurationClass(CoreContext coreContext, Class<?> configurationClazz) throws Exception {
+        Object configurationBean = coreContext.getBean(configurationClazz.getName());
         for (Method method : configurationClazz.getMethods()) {
-            if (isBeanMethod(method)) {
-                processBeanMethod(method.getAnnotation(Bean.class), method, configurationBean);
+            if (method.isAnnotationPresent(Bean.class)) {
+                processBeanMethod(coreContext, method, configurationBean);
             }
         }
     }
 
-    private static boolean isBeanMethod(Method method) {
-        return method.isAnnotationPresent(Bean.class);
-    }
-
-    private static void processBeanMethod(Bean bean, Method method, Object configurationBean) throws Exception {
+    private static void processBeanMethod(CoreContext coreContext, Method method, Object configurationBean) throws Exception {
+        Bean bean = method.getAnnotation(Bean.class);
         String beanName = getBeanName(bean, method);
         if (bean.scope().equals(BeanScope.SINGLETON)) {
-            addBeanToContainer(beanName, method, configurationBean);
+            coreContext.addBean(beanName, method.invoke(configurationBean));
         } else if (bean.scope().equals(BeanScope.PROTOTYPE)) {
-            addMethodToContainer(beanName, method);
+            coreContext.addBean(beanName, method);
         }
     }
 
@@ -231,28 +204,23 @@ public class Core {
         return "".equals(bean.value()) ? method.getReturnType().getName() : bean.value();
     }
 
-    private static void addBeanToContainer(String beanName, Method method, Object configurationBean) throws Exception {
-        CoreContext.addBean(beanName, method.invoke(configurationBean));
-    }
-
-    private static void addMethodToContainer(String beanName, Method method) throws Exception {
-        CoreContext.addBean(beanName, method);
-    }
-
-    private static void initializeAOP() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
+    private static void initializeAOP(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
             if (needToCreateProxy(clazz)) {
+                Enhancer enhancer = new Enhancer();
+                enhancer.setSuperclass(clazz);
                 if (clazz.isAnnotationPresent(OrmRepository.class)) {
-                    addProxyBeanToContainer(clazz, createProxy(clazz, OrmAopHandler.class));
+                    enhancer.setCallback((OrmAopHandler) coreContext.getBean(OrmAopHandler.class.getName()));
                 } else {
-                    addProxyBeanToContainer(clazz, createProxy(clazz, MichaelCoreAopHandler.class));
+                    enhancer.setCallback((MichaelCoreAopHandler) coreContext.getBean(MichaelCoreAopHandler.class.getName()));
                 }
+                coreContext.addProxyBean(getBeanName(clazz), enhancer.create());
             }
         }
     }
 
     private static boolean needToCreateProxy(Class<?> clazz) {
-        return Components.isComponentsClass(clazz) && isSingletonBean(clazz) && (aopOnClass(clazz) || aopOnMethod(clazz));
+        return Components.isComponentClass(clazz) && isSingletonBean(clazz) && (aopOnClass(clazz) || aopOnMethod(clazz));
     }
 
     static boolean aopOnClass(Class<?> clazz) {
@@ -271,80 +239,65 @@ public class Core {
         return false;
     }
 
-    static Object createProxy(Class<?> clazz, Class<? extends Callback> aopHandlerClass) {
-        Enhancer enhancer = new Enhancer();
-        enhancer.setSuperclass(clazz);
-        enhancer.setCallback(CoreContext.getBean(aopHandlerClass));
-        return enhancer.create();
-    }
-
-    private static void addProxyBeanToContainer(Class<?> clazz, Object proxy) throws Exception {
-        CoreContext.addProxyBean(getBeanName(clazz), proxy);
-    }
-
-    private static void initializeAutowired() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
-            if (isManagedBeanClass(clazz) && isSingletonBean(clazz)) {
-                autowireDependencies(clazz, CoreContext.getRealBeanByClass(clazz));
+    private static void initializeAutowired(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
+            if (Components.isComponentClass(clazz) && isSingletonBean(clazz)) {
+                autowireDependencies(coreContext, clazz, coreContext.getRealBean(clazz));
             }
         }
     }
 
-    static void autowireDependencies(Class<?> clazz, Object realBean) throws Exception {
+    static void autowireDependencies(CoreContext coreContext, Class<?> clazz, Object realBean) throws Exception {
         for (Field field : clazz.getDeclaredFields()) {
             if (field.isAnnotationPresent(Autowired.class)) {
                 field.setAccessible(true);
-                doAutowired(field, realBean);
+                doAutowired(coreContext, field, realBean);
             }
         }
     }
 
-    private static void doAutowired(Field field, Object realBean) throws Exception {
+    private static void doAutowired(CoreContext coreContext, Field field, Object realBean) throws Exception {
         Class<?> autowiredClazz = field.getAnnotation(Autowired.class).value();
         if (autowiredClazz.equals(Object.class)) {
             String beanName = field.getAnnotation(Autowired.class).name();
             if ("".equals(beanName)) {
-                field.set(realBean, CoreContext.getBean(getBeanName(field.getType())));
+                field.set(realBean, coreContext.getBean(getBeanName(field.getType())));
             } else {
-                field.set(realBean, CoreContext.getBean(beanName));
+                field.set(realBean, coreContext.getBean(beanName));
             }
         } else {
-            field.set(realBean, CoreContext.getBean(getBeanName(autowiredClazz)));
+            field.set(realBean, coreContext.getBean(getBeanName(autowiredClazz)));
         }
     }
 
-    private static void executeStartupCode() throws Exception {
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
-            if (isConfigurationClass(clazz)) {
-                MultiValueTreeMap<Integer, Method> map = collectMethodsWithStartupAnnotation(clazz);
-                executeMethodsWithStartupAnnotationByOrder(map, CoreContext.getBean(clazz));
+    private static void executeStartupCode(CoreContext coreContext) throws Exception {
+        for (Class<?> clazz : CoreContext.getClasses()) {
+            if (clazz.isAnnotationPresent(Configuration.class)) {
+                MultiValueTreeMap<Integer, Method> map = collectExecuteAfterContextCreateMethods(clazz);
+                executeExecuteAfterContextCreateMethodsByOrder(map, coreContext.getBean(clazz.getName()));
             }
         }
     }
 
-    private static MultiValueTreeMap<Integer, Method> collectMethodsWithStartupAnnotation(Class<?> clazz) throws Exception {
+    private static MultiValueTreeMap<Integer, Method> collectExecuteAfterContextCreateMethods(Class<?> configurationClazz) throws Exception {
         MultiValueTreeMap<Integer, Method> map = null;
-        for (Method method : clazz.getMethods()) {
-            if (method.isAnnotationPresent(ExecuteAfterContextStartup.class)) {
+        for (Method method : configurationClazz.getMethods()) {
+            if (method.isAnnotationPresent(ExecuteAfterContextCreate.class)) {
                 if (map == null) {
                     map = new MultiValueTreeMap<>();
                 }
-                map.put(method.getAnnotation(ExecuteAfterContextStartup.class).order(), method);
+                map.put(method.getAnnotation(ExecuteAfterContextCreate.class).order(), method);
             }
         }
         return map;
     }
 
-    private static void executeMethodsWithStartupAnnotationByOrder(MultiValueTreeMap<Integer, Method> map, Object configurationBean) throws Exception {
+    private static void executeExecuteAfterContextCreateMethodsByOrder(MultiValueTreeMap<Integer, Method> map, Object configurationBean) throws Exception {
         if (map != null) {
             for (Method method : map.getAllByOrder()) {
                 method.invoke(configurationBean);
             }
         }
-    }
-
-    public static void clean() {
-        CoreContext.clean();
     }
 
 }

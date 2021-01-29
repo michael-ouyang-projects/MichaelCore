@@ -9,7 +9,7 @@ import org.apache.commons.dbcp2.BasicDataSource;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
-import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
 import tw.framework.michaelcore.ioc.annotation.Value;
 
 @Configuration
@@ -40,7 +40,7 @@ public class DataCore {
         return basicDataSource;
     }
 
-    @ExecuteAfterContextStartup(order = 1)
+    @ExecuteAfterContextCreate(order = 1)
     public void initializeData() {
         StringBuilder command = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader("resources/data.sql"))) {

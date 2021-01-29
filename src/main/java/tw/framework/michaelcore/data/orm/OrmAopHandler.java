@@ -13,6 +13,9 @@ import tw.framework.michaelcore.ioc.annotation.Autowired;
 public class OrmAopHandler implements InvocationHandler {
 
     @Autowired
+    private CoreContext coreContext;
+
+    @Autowired
     private JdbcTemplate jdbcTemplate;
 
     @Override
@@ -26,7 +29,7 @@ public class OrmAopHandler implements InvocationHandler {
                 return jdbcTemplate.queryObjectList("SELECT * FROM " + table, entityClazz);
             }
         }
-        return method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
+        return method.invoke(coreContext.getRealBean(proxy), args);
     }
 
 }

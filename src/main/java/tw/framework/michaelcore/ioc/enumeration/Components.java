@@ -6,6 +6,7 @@ import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.data.annotation.Repository;
 import tw.framework.michaelcore.data.orm.annotation.OrmRepository;
 import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.annotation.Service;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.RestController;
@@ -13,8 +14,9 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 public enum Components {
 
     COMPONENT(Component.class),
-    RESTCONTROLLER(RestController.class),
+    CONFIGURATION(Configuration.class),
     CONTROLLER(Controller.class),
+    RESTCONTROLLER(RestController.class),
     SERVICE(Service.class),
     REPOSITORY(Repository.class),
     ORMREPOSITORY(OrmRepository.class),
@@ -30,7 +32,7 @@ public enum Components {
         return componentClass;
     }
 
-    public static boolean isComponentsClass(Class<?> clazz) {
+    public static boolean isComponentClass(Class<?> clazz) {
         for (Components component : values()) {
             if (clazz.isAnnotationPresent(component.getClazz())) {
                 return true;

@@ -17,9 +17,13 @@ import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.data.TransactionalData;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
 
 @AopHandler
 public class MichaelCoreAopHandler implements InvocationHandler {
+
+    @Autowired
+    private CoreContext coreContext;
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
@@ -29,7 +33,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         processAopHere(clazz, method, aopHandlers);
 
         if (asyncOnClassOrMethod(clazz, method)) {
-            return CoreContext.getBean(AsyncAopHandler.class).invokeAsync(proxy, method, args, aopHandlers);
+            return ((AsyncAopHandler) coreContext.getBean(AsyncAopHandler.class.getName())).invokeAsync(proxy, method, args, aopHandlers);
         }
         return invokeSync(proxy, method, args, aopHandlers);
     }
@@ -43,17 +47,17 @@ public class MichaelCoreAopHandler implements InvocationHandler {
     }
 
     private void addTransactionDataAndHandler(Transactional transactional, List<Object> aopHandlers) {
-        TransactionalAopHandler transactionalAopHandler = CoreContext.getBean(TransactionalAopHandler.class);
+        TransactionalAopHandler transactionalAopHandler = (TransactionalAopHandler) coreContext.getBean(TransactionalAopHandler.class.getName());
         transactionalAopHandler.addNewTransactionData(new TransactionalData(transactional.propagation(), transactional.isolation(), transactional.rollbackFor()));
         aopHandlers.add(transactionalAopHandler);
     }
 
     private void processAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
         if (clazz.isAnnotationPresent(AopHere.class)) {
-            aopHandlers.add(CoreContext.getBean(clazz.getAnnotation(AopHere.class).value()));
+            aopHandlers.add(coreContext.getBean(clazz.getAnnotation(AopHere.class).value().getName()));
         }
         if (method.isAnnotationPresent(AopHere.class)) {
-            aopHandlers.add(CoreContext.getBean(method.getAnnotation(AopHere.class).value()));
+            aopHandlers.add(coreContext.getBean(method.getAnnotation(AopHere.class).value().getName()));
         }
     }
 
@@ -65,7 +69,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
         Object returningObject = null;
         try {
-            returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
+            returningObject = method.invoke(coreContext.getRealBean(proxy), args);
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             if (needToRollback(throwable.getCause())) {

@@ -20,7 +20,8 @@ import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
-import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextStartup;
+import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
+import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextClose;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.mvc.annotation.Controller;
 import tw.framework.michaelcore.mvc.annotation.Delete;
@@ -53,6 +54,7 @@ public class MvcCore {
         return new Gson();
     }
 
+    @ExecuteBeforeContextClose
     public void clean() {
         try {
             serverSocket.close();
@@ -61,7 +63,7 @@ public class MvcCore {
         }
     }
 
-    @ExecuteAfterContextStartup(order = 2)
+    @ExecuteAfterContextCreate(order = 2)
     public void startServer() {
         ExecutorService executor = Executors.newCachedThreadPool();
         executor.submit(() -> {
@@ -71,6 +73,7 @@ public class MvcCore {
                     executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }
             } catch (SocketException e) {
+                e.printStackTrace();
                 System.err.println("Shutdown ServerSocket.");
             } catch (Exception e) {
                 e.printStackTrace();
@@ -78,7 +81,7 @@ public class MvcCore {
         });
     }
 
-    @ExecuteAfterContextStartup(order = 1)
+    @ExecuteAfterContextCreate(order = 1)
     public void initializeMvcCore() {
         try {
             initializeRequestMapping();
@@ -92,7 +95,7 @@ public class MvcCore {
 
     private void initializeRequestMapping() throws Exception {
         requestMapping = createRequestMapping();
-        for (Class<?> clazz : CoreContext.getComponentClasses()) {
+        for (Class<?> clazz : CoreContext.getClasses()) {
             if (isControllerOrRestController(clazz)) {
                 mapUrlToMethod(clazz);
             }

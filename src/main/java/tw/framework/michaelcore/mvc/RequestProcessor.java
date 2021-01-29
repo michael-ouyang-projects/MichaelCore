@@ -33,6 +33,9 @@ public class RequestProcessor {
     @Value
     private String loggingPage;
 
+    @Autowired
+    private CoreContext coreContext;
+
     public Request getRequest(InputStream inputStream) throws IOException {
         Request request = null;
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -120,7 +123,7 @@ public class RequestProcessor {
         } else {
             parameters = getParametersObjectByParametersString(request.getRequestBody(), method);
         }
-        Model model = (Model) method.invoke(CoreContext.getBean(method.getDeclaringClass().getName()), parameters);
+        Model model = (Model) method.invoke(coreContext.getBean(method.getDeclaringClass().getName()), parameters);
         return readAndProcessTemplate(model);
     }
 
@@ -194,7 +197,7 @@ public class RequestProcessor {
     private byte[] processRestControllerMethod(Request request, Method method) throws Exception {
         request.setResponseContentType("application/json");
         Object[] parameters = getParametersObjectByJson(request.getRequestBody(), method);
-        Object resultObject = method.invoke(CoreContext.getBean(method.getDeclaringClass().getName()), parameters);
+        Object resultObject = method.invoke(coreContext.getBean(method.getDeclaringClass().getName()), parameters);
         if (resultObject != null) {
             return gson.toJson(resultObject).getBytes();
         }

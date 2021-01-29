@@ -1,12 +1,16 @@
 package tw.framework.michaelcore.test.aop;
 
-import tw.framework.michaelcore.aop.AopHelper;
 import tw.framework.michaelcore.aop.annotation.AopHere;
+import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Component;
 
 @AopHere(ClassAop.class)
 @Component(value = "myComponent")
 public class MyComponent {
+
+    @Autowired
+    private CoreContext coreContext;
 
     public void testClassAop() {
     }
@@ -20,7 +24,7 @@ public class MyComponent {
     }
 
     public void testInnerMethodCallUsingProxy() {
-        AopHelper.executeInnerMethodWithAop(MyComponent.class).innerMethodCall();
+        coreContext.executeInnerMethodWithAop(MyComponent.class).innerMethodCall();
     }
 
     @AopHere(InnerMethodAop.class)

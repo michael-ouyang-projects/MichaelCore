@@ -11,9 +11,13 @@ import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.annotation.Autowired;
 
 @AopHandler
 public class AsyncAopHandler {
+
+    @Autowired
+    private CoreContext coreContext;
 
     @SuppressWarnings("unchecked")
     public CompletableFuture<Object> invokeAsync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) {
@@ -21,7 +25,7 @@ public class AsyncAopHandler {
             Object returningObject = null;
             try {
                 executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
-                returningObject = method.invoke(CoreContext.getRealBeanByProxy(proxy), args);
+                returningObject = method.invoke(coreContext.getRealBean(proxy), args);
                 if (returningObject != null) {
                     returningObject = ((CompletableFuture<Object>) returningObject).get();
                 }

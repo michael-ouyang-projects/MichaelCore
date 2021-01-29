@@ -10,10 +10,11 @@ import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
-import tw.framework.michaelcore.mvc.MvcCore;
 
 @Configuration
 public class TestIoC {
+
+    private static CoreContext coreContext;
 
     @Bean(value = "singletonBean")
     public TestBean singletonBean() {
@@ -27,19 +28,18 @@ public class TestIoC {
 
     @BeforeAll
     public static void beforeAll() {
-        Core.start();
+        coreContext = Core.start();
     }
 
     @AfterAll
     public static void afterAll() {
-        CoreContext.getBean(MvcCore.class).clean();
-        Core.clean();
+        coreContext.close();
     }
 
     @Test
     public void testSingletonBean() {
-        TestBean bean1 = CoreContext.getBean("singletonBean", TestBean.class);
-        TestBean bean2 = CoreContext.getBean("singletonBean", TestBean.class);
+        TestBean bean1 = coreContext.getBean("singletonBean", TestBean.class);
+        TestBean bean2 = coreContext.getBean("singletonBean", TestBean.class);
         Assertions.assertNotNull(bean1);
         Assertions.assertNotNull(bean2);
         Assertions.assertEquals(bean1, bean2);
@@ -47,8 +47,8 @@ public class TestIoC {
 
     @Test
     public void testPrototypeBean() {
-        TestBean bean1 = CoreContext.getBean("prototypeBean", TestBean.class);
-        TestBean bean2 = CoreContext.getBean("prototypeBean", TestBean.class);
+        TestBean bean1 = coreContext.getBean("prototypeBean", TestBean.class);
+        TestBean bean2 = coreContext.getBean("prototypeBean", TestBean.class);
         Assertions.assertNotNull(bean1);
         Assertions.assertNotNull(bean2);
         Assertions.assertNotEquals(bean1, bean2);
@@ -56,8 +56,8 @@ public class TestIoC {
 
     @Test
     public void testSingletonComponent() {
-        SingletonComponent component1 = CoreContext.getBean("singletonComponent", SingletonComponent.class);
-        SingletonComponent component2 = CoreContext.getBean("singletonComponent", SingletonComponent.class);
+        SingletonComponent component1 = coreContext.getBean("singletonComponent", SingletonComponent.class);
+        SingletonComponent component2 = coreContext.getBean("singletonComponent", SingletonComponent.class);
         Assertions.assertNotNull(component1);
         Assertions.assertNotNull(component2);
         Assertions.assertEquals(component1, component2);
@@ -65,8 +65,8 @@ public class TestIoC {
 
     @Test
     public void testPrototypeComponent() {
-        PrototypeComponent component1 = CoreContext.getBean("prototypeComponent", PrototypeComponent.class);
-        PrototypeComponent component2 = CoreContext.getBean("prototypeComponent", PrototypeComponent.class);
+        PrototypeComponent component1 = coreContext.getBean("prototypeComponent", PrototypeComponent.class);
+        PrototypeComponent component2 = coreContext.getBean("prototypeComponent", PrototypeComponent.class);
         Assertions.assertNotNull(component1);
         Assertions.assertNotNull(component2);
         Assertions.assertNotEquals(component1, component2);
@@ -74,10 +74,10 @@ public class TestIoC {
 
     @Test
     public void testSingletonDependency() {
-        PrototypeComponent component = CoreContext.getBean("prototypeComponent", PrototypeComponent.class);
+        PrototypeComponent component = coreContext.getBean("prototypeComponent", PrototypeComponent.class);
         Assertions.assertNotNull(component.getTestBean());
 
-        TestBean bean = CoreContext.getBean("singletonBean", TestBean.class);
+        TestBean bean = coreContext.getBean("singletonBean", TestBean.class);
         Assertions.assertNotNull(bean);
 
         Assertions.assertEquals(component.getTestBean(), bean);
@@ -85,10 +85,10 @@ public class TestIoC {
 
     @Test
     public void testPrototypeDependency() {
-        SingletonComponent component = CoreContext.getBean("singletonComponent", SingletonComponent.class);
+        SingletonComponent component = coreContext.getBean("singletonComponent", SingletonComponent.class);
         Assertions.assertNotNull(component.getTestBean());
 
-        TestBean bean = CoreContext.getBean("prototypeBean", TestBean.class);
+        TestBean bean = coreContext.getBean("prototypeBean", TestBean.class);
         Assertions.assertNotNull(bean);
 
         Assertions.assertNotEquals(component.getTestBean(), bean);
@@ -96,8 +96,8 @@ public class TestIoC {
 
     @Test
     public void testApplicationProperties() {
-        SingletonComponent singletonComponent = CoreContext.getBean("singletonComponent", SingletonComponent.class);
-        PrototypeComponent prototypeComponent = CoreContext.getBean("prototypeComponent", PrototypeComponent.class);
+        SingletonComponent singletonComponent = coreContext.getBean("singletonComponent", SingletonComponent.class);
+        PrototypeComponent prototypeComponent = coreContext.getBean("prototypeComponent", PrototypeComponent.class);
         Assertions.assertEquals(singletonComponent.getTest(), "hello@12345");
         Assertions.assertEquals(prototypeComponent.getTest(), "hello@12345");
     }
