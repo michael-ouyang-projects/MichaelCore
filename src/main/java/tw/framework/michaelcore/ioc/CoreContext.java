@@ -39,18 +39,8 @@ public class CoreContext {
         CoreContext.classes = componentClasses;
     }
 
-    public <T> T getBean(Class<T> clazz) {
-        Object bean = null;
-        for (Object value : beanFactory.values()) {
-            if (value.getClass().equals(clazz)) {
-                if (bean == null) {
-                    bean = value;
-                } else {
-                    throw new RuntimeException("Duplicate Bean Type: " + clazz.getName());
-                }
-            }
-        }
-        return clazz.cast(bean);
+    Map<String, Object> getBeanFactory() {
+        return beanFactory;
     }
 
     public <T> T getBean(String name, Class<T> clazz) {
@@ -76,8 +66,8 @@ public class CoreContext {
     private Object getPrototypeComponentByConstructor(Constructor<Object> constructor, String beanName) throws Exception {
         Object component = constructor.newInstance();
         Class<?> componentClazz = component.getClass();
-        Core.insertValueToBean(componentClazz, component);
-        Core.autowireDependencies(this, componentClazz, component);
+        Core.insertPropertiesToBean(component, componentClazz);
+        Core.autowireDependencies(this, component);
         if (Core.aopOnClass(componentClazz) || Core.aopOnMethod(componentClazz)) {
             return getProxyAndAddRealBeanToContainer(componentClazz, component);
         }
@@ -93,8 +83,8 @@ public class CoreContext {
         return proxy;
     }
 
-    public Object getRealBean(Class<?> clazz) {
-        Object bean = beanFactory.get(Core.getBeanName(clazz));
+    public Object getRealBean(String name) {
+        Object bean = beanFactory.get(name);
         boolean isProxy = bean.getClass().getName().contains("$$EnhancerByCGLIB$$");
         return isProxy ? getRealBean(bean) : bean;
     }
