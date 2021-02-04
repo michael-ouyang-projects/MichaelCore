@@ -1,6 +1,5 @@
 package tw.framework.michaelcore.aop;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -66,7 +65,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
     }
 
     private Object invokeSync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
-        executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
+        executeBeforeMethods(aopHandlers, args);
         Object returningObject = null;
         try {
             returningObject = method.invoke(coreContext.getRealBean(proxy), args);
@@ -77,15 +76,33 @@ public class MichaelCoreAopHandler implements InvocationHandler {
             }
         }
         Collections.reverse(aopHandlers);
-        executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
+        executeAfterMethods(aopHandlers, returningObject);
         return returningObject;
     }
 
-    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> annotation) throws Exception {
+    private void executeBeforeMethods(List<Object> aopHandlers, Object[] args) throws Exception {
         for (Object handler : aopHandlers) {
             for (Method method : handler.getClass().getMethods()) {
-                if (method.isAnnotationPresent(annotation)) {
-                    method.invoke(handler);
+                if (method.isAnnotationPresent(Before.class)) {
+                    if (method.getParameterCount() == 0) {
+                        method.invoke(handler);
+                    } else {
+                        method.invoke(handler, args);
+                    }
+                }
+            }
+        }
+    }
+
+    private void executeAfterMethods(List<Object> aopHandlers, Object arg) throws Exception {
+        for (Object handler : aopHandlers) {
+            for (Method method : handler.getClass().getMethods()) {
+                if (method.isAnnotationPresent(After.class)) {
+                    if (method.getParameterCount() == 0) {
+                        method.invoke(handler);
+                    } else {
+                        method.invoke(handler, arg);
+                    }
                 }
             }
         }

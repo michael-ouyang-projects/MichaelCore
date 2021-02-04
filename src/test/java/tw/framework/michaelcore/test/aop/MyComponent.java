@@ -32,4 +32,9 @@ public class MyComponent {
         System.out.println("Inner Method()");
     }
 
+    @AopHere(ParametersAop.class)
+    public Integer testAopWithParameters(String firstName, String lastName) {
+        return 23;
+    }
+
 }

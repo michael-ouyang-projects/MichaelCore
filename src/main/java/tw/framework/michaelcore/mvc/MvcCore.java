@@ -74,9 +74,7 @@ public class MvcCore {
                     executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }
             } catch (SocketException e) {
-                if (isSocketClosed) {
-                    System.out.println("Shutdown ServerSocket.");
-                } else {
+                if (!isSocketClosed) {
                     e.printStackTrace();
                 }
             } catch (Exception e) {

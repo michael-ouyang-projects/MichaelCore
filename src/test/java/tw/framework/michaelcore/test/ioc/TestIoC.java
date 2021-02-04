@@ -38,7 +38,7 @@ public class TestIoC {
 
     @AfterAll
     public static void afterAll() {
-        coreContext.close();
+        Core.stop(coreContext);
     }
 
     @Test

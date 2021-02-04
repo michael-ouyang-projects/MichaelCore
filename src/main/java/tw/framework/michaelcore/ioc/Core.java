@@ -112,9 +112,9 @@ public class Core {
             initializeAOP(coreContext);
             initializeAutowired(coreContext);
             executeStartupCode(coreContext);
-            System.out.println("MichaelCore Start!");
+            System.out.println("== MichaelCore Started Successfully ==");
         } catch (Exception e) {
-            System.err.println("initializeCore() Error!");
+            System.err.println("!! MichaelCore Started Error !!");
             e.printStackTrace();
         }
         return coreContext;
@@ -324,6 +324,17 @@ public class Core {
             for (Method method : map.getAllByOrder()) {
                 method.invoke(configurationBean);
             }
+        }
+    }
+
+    public static void stop(CoreContext coreContext) {
+        try {
+            executeShutdownCode(coreContext);
+            coreContext.clearBeanFactory();
+            System.out.println("== MichaelCore Stopped Successfully ==");
+        } catch (Exception e) {
+            System.out.println("!! MichaelCore Stopped Error !!");
+            e.printStackTrace();
         }
     }
 

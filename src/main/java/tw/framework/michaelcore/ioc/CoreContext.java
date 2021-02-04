@@ -44,6 +44,11 @@ public class CoreContext {
         return beanFactory;
     }
 
+    public void clearBeanFactory() {
+        beanFactory.clear();
+        realBeanFactory.clear();
+    }
+
     public <T> T getBean(String name, Class<T> clazz) {
         return clazz.cast(getBean(name));
     }
@@ -122,17 +127,6 @@ public class CoreContext {
             beanName = Core.getComponentName(clazz.getAnnotation(Component.class), clazz);
         }
         return getBean(beanName, clazz);
-    }
-
-    public void close() {
-        try {
-            Core.executeShutdownCode(this);
-            beanFactory.clear();
-            realBeanFactory.clear();
-        } catch (Exception e) {
-            System.err.println("shutdownCore() Error!");
-            e.printStackTrace();
-        }
     }
 
 }

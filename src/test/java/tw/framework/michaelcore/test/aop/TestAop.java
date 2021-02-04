@@ -27,7 +27,7 @@ public class TestAop {
 
     @AfterAll
     public static void afterAll() {
-        coreContext.close();
+        Core.stop(coreContext);
     }
 
     @BeforeEach
@@ -75,6 +75,17 @@ public class TestAop {
                         "Inner Method()\r\n" +
                         "Bye Bye InnerMethodAop!\r\n" +
                         "Bye Bye ClassAop!\r\n" +
+                        "Bye Bye ClassAop!\r\n",
+                outputStream.toString());
+    }
+
+    @Test
+    public void testAopWithParameters() {
+        component.testAopWithParameters("michael", "ouyang");
+        Assertions.assertEquals(
+                "This is ClassAop!\r\n" +
+                        "In before aop: michael, ouyang\r\n" +
+                        "In after aop: 23\r\n" +
                         "Bye Bye ClassAop!\r\n",
                 outputStream.toString());
     }

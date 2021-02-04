@@ -27,7 +27,7 @@ public class TestPropagation {
 
     @AfterAll
     public static void afterAll() {
-        coreContext.close();
+        Core.stop(coreContext);
     }
 
     @BeforeEach

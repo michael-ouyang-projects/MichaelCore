@@ -18,7 +18,7 @@ public class TestPlay {
 
     @AfterAll
     public static void afterAll() {
-        coreContext.close();
+        Core.stop(coreContext);
     }
 
     @Test
