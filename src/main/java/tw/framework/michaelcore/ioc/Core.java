@@ -25,6 +25,7 @@ import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
+import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextClose;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 import tw.framework.michaelcore.ioc.enumeration.Components;
@@ -163,30 +164,31 @@ public class Core {
     }
 
     private static void initializeIoCForBean(CoreContext coreContext) throws Exception {
-        Map<String, Object> tmpBeanFactory = new HashMap<>();
-        for (Object bean : coreContext.getBeanFactory().values()) {
-            if (bean.getClass().isAnnotationPresent(Configuration.class)) {
-                processConfigurationBean(tmpBeanFactory, bean);
-            }
+        List<Object> configurationBeans = coreContext.getBeanFactory().values()
+                .stream()
+                .filter(bean -> {
+                    return bean.getClass().isAnnotationPresent(Configuration.class);
+                }).collect(Collectors.toList());
+        for (Object configurationBean : configurationBeans) {
+            processConfigurationBean(coreContext, configurationBean);
         }
-        tmpBeanFactory.forEach(coreContext::addBean);
     }
 
-    private static void processConfigurationBean(Map<String, Object> tmpBeanFactory, Object configurationBean) throws Exception {
+    private static void processConfigurationBean(CoreContext coreContext, Object configurationBean) throws Exception {
         for (Method method : configurationBean.getClass().getMethods()) {
             if (method.isAnnotationPresent(Bean.class)) {
-                processBeanMethod(tmpBeanFactory, method, configurationBean);
+                processBeanMethod(coreContext, method, configurationBean);
             }
         }
     }
 
-    private static void processBeanMethod(Map<String, Object> tmpBeanFactory, Method method, Object configurationBean) throws Exception {
+    private static void processBeanMethod(CoreContext coreContext, Method method, Object configurationBean) throws Exception {
         Bean bean = method.getAnnotation(Bean.class);
         String beanName = getBeanName(bean, method);
         if (bean.scope().equals(BeanScope.SINGLETON)) {
-            tmpBeanFactory.put(beanName, method.invoke(configurationBean));
+            coreContext.addBean(beanName, method.invoke(configurationBean));
         } else if (bean.scope().equals(BeanScope.PROTOTYPE)) {
-            tmpBeanFactory.put(beanName, method);
+            coreContext.addBean(beanName, method);
         }
     }
 
@@ -261,35 +263,52 @@ public class Core {
         if (autowiredClazz.equals(Object.class)) {
             String autowiredName = field.getAnnotation(Autowired.class).name();
             if ("".equals(autowiredName)) {
-                field.set(realBean, coreContext.getBean(getBeanName(field.getType())));
+                field.set(realBean, getBean(coreContext, field.getType()));
             } else {
                 field.set(realBean, coreContext.getBean(autowiredName));
             }
         } else {
-            field.set(realBean, coreContext.getBean(getBeanName(autowiredClazz)));
+            field.set(realBean, getBean(coreContext, autowiredClazz));
         }
     }
 
-    static String getBeanName(Class<?> clazz) {
-        String beanName = clazz.getName();
-        if (clazz.isAnnotationPresent(Component.class)) {
-            beanName = getComponentName(clazz.getAnnotation(Component.class), clazz);
+    private static Object getBean(CoreContext coreContext, Class<?> clazz) {
+        if (Components.isComponentClass(clazz)) {
+            String beanName = clazz.getName();
+            if (clazz.isAnnotationPresent(Component.class)) {
+                beanName = getComponentName(clazz.getAnnotation(Component.class), clazz);
+            }
+            return coreContext.getBean(beanName);
         }
-        return beanName;
+        return getThirdPartyBean(coreContext, clazz);
+    }
+
+    private static Object getThirdPartyBean(CoreContext coreContext, Class<?> clazz) {
+        Object returningBean = null;
+        for (Entry<String, Object> entry : coreContext.getBeanFactory().entrySet()) {
+            Object bean = entry.getValue();
+            if (bean.getClass().equals(clazz) || (bean.getClass().equals(Method.class) && ((Method) bean).getReturnType().equals(clazz))) {
+                if (returningBean != null) {
+                    throw new RuntimeException("More than one bean with type: " + clazz.getName());
+                }
+                returningBean = coreContext.getBean(entry.getKey());
+            }
+        }
+        return returningBean;
     }
 
     private static void executeStartupCode(CoreContext coreContext) throws Exception {
-        for (Class<?> clazz : CoreContext.getClasses()) {
-            if (clazz.isAnnotationPresent(Configuration.class)) {
-                MultiValueTreeMap<Integer, Method> map = collectExecuteAfterContextCreateMethods(clazz);
-                executeExecuteAfterContextCreateMethodsByOrder(map, coreContext.getBean(clazz.getName()));
+        for (Object bean : coreContext.getBeanFactory().values()) {
+            if (bean.getClass().isAnnotationPresent(Configuration.class)) {
+                MultiValueTreeMap<Integer, Method> map = collectExecuteAfterContextCreateMethodsByAnnotation(bean);
+                executeMethodsByOrder(map, bean);
             }
         }
     }
 
-    private static MultiValueTreeMap<Integer, Method> collectExecuteAfterContextCreateMethods(Class<?> configurationClazz) throws Exception {
+    private static MultiValueTreeMap<Integer, Method> collectExecuteAfterContextCreateMethodsByAnnotation(Object configurationBean) throws Exception {
         MultiValueTreeMap<Integer, Method> map = null;
-        for (Method method : configurationClazz.getMethods()) {
+        for (Method method : configurationBean.getClass().getMethods()) {
             if (method.isAnnotationPresent(ExecuteAfterContextCreate.class)) {
                 if (map == null) {
                     map = new MultiValueTreeMap<>();
@@ -300,12 +319,34 @@ public class Core {
         return map;
     }
 
-    private static void executeExecuteAfterContextCreateMethodsByOrder(MultiValueTreeMap<Integer, Method> map, Object configurationBean) throws Exception {
+    private static void executeMethodsByOrder(MultiValueTreeMap<Integer, Method> map, Object configurationBean) throws Exception {
         if (map != null) {
             for (Method method : map.getAllByOrder()) {
                 method.invoke(configurationBean);
             }
         }
+    }
+
+    static void executeShutdownCode(CoreContext coreContext) throws Exception {
+        for (Object bean : coreContext.getBeanFactory().values()) {
+            if (bean.getClass().isAnnotationPresent(Configuration.class)) {
+                MultiValueTreeMap<Integer, Method> map = collectExecuteBeforeContextCloseMethodsByAnnotation(bean);
+                executeMethodsByOrder(map, bean);
+            }
+        }
+    }
+
+    private static MultiValueTreeMap<Integer, Method> collectExecuteBeforeContextCloseMethodsByAnnotation(Object configurationBean) throws Exception {
+        MultiValueTreeMap<Integer, Method> map = null;
+        for (Method method : configurationBean.getClass().getMethods()) {
+            if (method.isAnnotationPresent(ExecuteBeforeContextClose.class)) {
+                if (map == null) {
+                    map = new MultiValueTreeMap<>();
+                }
+                map.put(method.getAnnotation(ExecuteBeforeContextClose.class).order(), method);
+            }
+        }
+        return map;
     }
 
 }

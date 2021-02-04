@@ -8,6 +8,7 @@ import java.util.Map;
 
 import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
+import tw.framework.michaelcore.ioc.annotation.Component;
 
 public class CoreContext {
 
@@ -50,6 +51,9 @@ public class CoreContext {
     @SuppressWarnings("unchecked")
     public Object getBean(String name) {
         Object bean = beanFactory.get(name);
+        if (bean == null) {
+            return null;
+        }
         try {
             if (bean.getClass().equals(Constructor.class)) {
                 bean = getPrototypeComponentByConstructor((Constructor<Object>) bean, name);
@@ -113,12 +117,22 @@ public class CoreContext {
     }
 
     public <T> T executeInnerMethodWithAop(Class<T> clazz) {
-        return getBean(Core.getBeanName(clazz), clazz);
+        String beanName = clazz.getName();
+        if (clazz.isAnnotationPresent(Component.class)) {
+            beanName = Core.getComponentName(clazz.getAnnotation(Component.class), clazz);
+        }
+        return getBean(beanName, clazz);
     }
 
     public void close() {
-        beanFactory.clear();
-        realBeanFactory.clear();
+        try {
+            Core.executeShutdownCode(this);
+            beanFactory.clear();
+            realBeanFactory.clear();
+        } catch (Exception e) {
+            System.err.println("shutdownCore() Error!");
+            e.printStackTrace();
+        }
     }
 
 }

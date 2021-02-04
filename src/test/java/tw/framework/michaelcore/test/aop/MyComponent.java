@@ -24,7 +24,7 @@ public class MyComponent {
     }
 
     public void testInnerMethodCallUsingProxy() {
-        coreContext.executeInnerMethodWithAop(MyComponent.class).innerMethodCall();
+        coreContext.executeInnerMethodWithAop(this.getClass()).innerMethodCall();
     }
 
     @AopHere(InnerMethodAop.class)

@@ -10,6 +10,9 @@ public class SingletonComponent {
     @Value
     private String test;
 
+    @Autowired
+    private String hello;
+
     @Autowired(name = "prototypeBean")
     private TestBean testBean;
 
@@ -19,6 +22,14 @@ public class SingletonComponent {
 
     public void setTest(String test) {
         this.test = test;
+    }
+
+    public String getHello() {
+        return hello;
+    }
+
+    public void setHello(String hello) {
+        this.hello = hello;
     }
 
     public TestBean getTestBean() {

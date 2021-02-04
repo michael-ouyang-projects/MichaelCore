@@ -33,8 +33,6 @@ import tw.framework.michaelcore.mvc.annotation.RestController;
 @Configuration
 public class MvcCore {
 
-    private ServerSocket serverSocket;
-
     @Value
     private String listeningPort;
 
@@ -47,6 +45,8 @@ public class MvcCore {
     @Autowired
     private RequestProcessor requestProcessor;
 
+    private boolean isSocketClosed;
+    private ServerSocket serverSocket;
     private static Map<String, Map<String, Method>> requestMapping;
 
     @Bean
@@ -57,6 +57,7 @@ public class MvcCore {
     @ExecuteBeforeContextClose
     public void clean() {
         try {
+            isSocketClosed = true;
             serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
@@ -73,8 +74,11 @@ public class MvcCore {
                     executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }
             } catch (SocketException e) {
-                e.printStackTrace();
-                System.err.println("Shutdown ServerSocket.");
+                if (isSocketClosed) {
+                    System.out.println("Shutdown ServerSocket.");
+                } else {
+                    e.printStackTrace();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

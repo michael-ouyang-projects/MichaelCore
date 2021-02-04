@@ -16,6 +16,11 @@ public class TestIoC {
 
     private static CoreContext coreContext;
 
+    @Bean("hello")
+    public String helloString() {
+        return "Hello, I'm Michael.";
+    }
+
     @Bean(value = "singletonBean")
     public TestBean singletonBean() {
         return new TestBean();
@@ -92,6 +97,12 @@ public class TestIoC {
         Assertions.assertNotNull(bean);
 
         Assertions.assertNotEquals(component.getTestBean(), bean);
+    }
+
+    @Test
+    public void testThirdPatryBean() {
+        SingletonComponent component = coreContext.getBean("singletonComponent", SingletonComponent.class);
+        Assertions.assertEquals("Hello, I'm Michael.", component.getHello());
     }
 
     @Test
