@@ -12,4 +12,5 @@ It including below features so far.
 6. Transactional
 7. Async
 8. Caching (In Progress)
-9. Mocking (In Progress)
+9. Testing (In Progress)
+10. Mocking (In Progress)
