@@ -7,7 +7,6 @@ import java.util.List;
 
 import net.sf.cglib.proxy.InvocationHandler;
 import tw.framework.michaelcore.aop.annotation.After;
-import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.async.AsyncAopHandler;
@@ -17,6 +16,7 @@ import tw.framework.michaelcore.data.TransactionalData;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
 
 @AopHandler
 public class MichaelCoreAopHandler implements InvocationHandler {

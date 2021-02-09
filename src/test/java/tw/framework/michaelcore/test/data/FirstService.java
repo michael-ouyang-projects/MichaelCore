@@ -4,7 +4,7 @@ import tw.framework.michaelcore.data.JdbcTemplate;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.data.enumeration.TransactionalPropagation;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Service;
+import tw.framework.michaelcore.ioc.annotation.components.Service;
 
 @Service
 public class FirstService {

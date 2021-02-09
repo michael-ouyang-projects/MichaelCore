@@ -18,9 +18,9 @@ import com.google.gson.Gson;
 
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Value;
-import tw.framework.michaelcore.mvc.annotation.Controller;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
+import tw.framework.michaelcore.ioc.annotation.components.Controller;
 import tw.framework.michaelcore.mvc.annotation.RequestBody;
 import tw.framework.michaelcore.mvc.annotation.RequestParam;
 

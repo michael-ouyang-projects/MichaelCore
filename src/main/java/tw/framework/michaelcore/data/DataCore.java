@@ -8,9 +8,9 @@ import org.apache.commons.dbcp2.BasicDataSource;
 
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
 import tw.framework.michaelcore.ioc.annotation.Value;
+import tw.framework.michaelcore.ioc.annotation.components.Configuration;
 
 @Configuration
 public class DataCore {

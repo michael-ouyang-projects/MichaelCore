@@ -1,8 +1,8 @@
 package tw.framework.michaelcore.test.ioc;
 
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Component;
 import tw.framework.michaelcore.ioc.annotation.Value;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
 
 @Component(value = "singletonComponent")
 public class SingletonComponent {

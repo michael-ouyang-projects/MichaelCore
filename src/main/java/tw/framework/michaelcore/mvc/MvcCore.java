@@ -19,16 +19,16 @@ import com.google.gson.Gson;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Configuration;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
 import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextClose;
 import tw.framework.michaelcore.ioc.annotation.Value;
-import tw.framework.michaelcore.mvc.annotation.Controller;
+import tw.framework.michaelcore.ioc.annotation.components.Configuration;
+import tw.framework.michaelcore.ioc.annotation.components.Controller;
+import tw.framework.michaelcore.ioc.annotation.components.RestController;
 import tw.framework.michaelcore.mvc.annotation.Delete;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
 import tw.framework.michaelcore.mvc.annotation.Put;
-import tw.framework.michaelcore.mvc.annotation.RestController;
 
 @Configuration
 public class MvcCore {

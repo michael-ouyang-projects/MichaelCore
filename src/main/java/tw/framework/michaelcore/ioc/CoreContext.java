@@ -8,7 +8,7 @@ import java.util.Map;
 
 import net.sf.cglib.proxy.Enhancer;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
-import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
 
 public class CoreContext {
 

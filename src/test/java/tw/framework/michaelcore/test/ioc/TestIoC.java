@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
-import tw.framework.michaelcore.ioc.annotation.Configuration;
+import tw.framework.michaelcore.ioc.annotation.components.Configuration;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 
 @Configuration

@@ -6,7 +6,7 @@ import java.util.concurrent.CompletableFuture;
 import demo.user.model.User;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Service;
+import tw.framework.michaelcore.ioc.annotation.components.Service;
 
 @Async
 @Service

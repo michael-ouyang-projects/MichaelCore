@@ -5,7 +5,7 @@ import java.util.List;
 import demo.user.model.UserForOrm;
 import demo.user.repository.UserForOrmRepository;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Service;
+import tw.framework.michaelcore.ioc.annotation.components.Service;
 
 @Service
 public class UserForOrmService {

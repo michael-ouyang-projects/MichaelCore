@@ -3,11 +3,11 @@ package tw.framework.michaelcore.data.orm;
 import java.lang.reflect.Method;
 
 import net.sf.cglib.proxy.InvocationHandler;
-import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.data.JdbcTemplate;
-import tw.framework.michaelcore.data.orm.annotation.OrmRepository;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
+import tw.framework.michaelcore.ioc.annotation.components.OrmRepository;
 
 @AopHandler
 public class OrmAopHandler implements InvocationHandler {

@@ -7,11 +7,11 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import tw.framework.michaelcore.aop.annotation.After;
-import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
 
 @AopHandler
 public class AsyncAopHandler {

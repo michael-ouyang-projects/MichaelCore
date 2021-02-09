@@ -9,10 +9,10 @@ import java.util.Stack;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import tw.framework.michaelcore.aop.annotation.After;
-import tw.framework.michaelcore.aop.annotation.AopHandler;
 import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.data.enumeration.TransactionalPropagation;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
 
 @AopHandler
 public class TransactionalAopHandler {

@@ -5,10 +5,10 @@ import java.util.List;
 import demo.user.model.User;
 import demo.user.service.UserService;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
+import tw.framework.michaelcore.ioc.annotation.components.RestController;
 import tw.framework.michaelcore.mvc.annotation.Get;
 import tw.framework.michaelcore.mvc.annotation.Post;
 import tw.framework.michaelcore.mvc.annotation.RequestBody;
-import tw.framework.michaelcore.mvc.annotation.RestController;
 
 @RestController
 public class RestUserController {

@@ -2,14 +2,14 @@ package tw.framework.michaelcore.ioc.enumeration;
 
 import java.lang.annotation.Annotation;
 
-import tw.framework.michaelcore.aop.annotation.AopHandler;
-import tw.framework.michaelcore.data.annotation.Repository;
-import tw.framework.michaelcore.data.orm.annotation.OrmRepository;
-import tw.framework.michaelcore.ioc.annotation.Component;
-import tw.framework.michaelcore.ioc.annotation.Configuration;
-import tw.framework.michaelcore.ioc.annotation.Service;
-import tw.framework.michaelcore.mvc.annotation.Controller;
-import tw.framework.michaelcore.mvc.annotation.RestController;
+import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
+import tw.framework.michaelcore.ioc.annotation.components.Configuration;
+import tw.framework.michaelcore.ioc.annotation.components.Controller;
+import tw.framework.michaelcore.ioc.annotation.components.OrmRepository;
+import tw.framework.michaelcore.ioc.annotation.components.Repository;
+import tw.framework.michaelcore.ioc.annotation.components.RestController;
+import tw.framework.michaelcore.ioc.annotation.components.Service;
 
 public enum Components {
 

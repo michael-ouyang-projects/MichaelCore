@@ -3,7 +3,7 @@ package tw.framework.michaelcore.test.aop;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
 
 @AopHere(ClassAop.class)
 @Component(value = "myComponent")

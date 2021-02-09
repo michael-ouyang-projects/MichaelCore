@@ -11,7 +11,7 @@ import java.util.List;
 import org.apache.commons.dbcp2.BasicDataSource;
 
 import tw.framework.michaelcore.ioc.annotation.Autowired;
-import tw.framework.michaelcore.ioc.annotation.Component;
+import tw.framework.michaelcore.ioc.annotation.components.Component;
 
 @Component
 public class JdbcTemplate {
