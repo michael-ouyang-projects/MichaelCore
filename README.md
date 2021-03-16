@@ -12,4 +12,4 @@ public class DemoApplication {
 }
 ```
 
-Let's dive into "tw.framework.michaelcore.ioc.Core.java"
+Let's dive into [Core.java](src/main/java/tw/framework/michaelcore/ioc/Core.java), it's the beginning of the framework!
