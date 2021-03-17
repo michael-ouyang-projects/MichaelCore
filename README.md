@@ -1,6 +1,7 @@
 # MichaelCore
 
 ### This is a tutorial focus on how to develop your own Java Framework. So far, it include Embedded Web Server, IoC, AOP, MVC, Transactional Management, Asynchronous Processing, etc. (ORM and Mocking features are still under construction)
+
 ---
 ### Init
 First of all, the Entrypoint!<br/>
@@ -61,5 +62,6 @@ public static CoreContext start() {
 }
 ```
 Above is the execution flow of the initialization, note that the sequence of these steps is very important and cannot be mess up! It will be divided into four block for detail explanation.
+
 ---
 ### IoC
