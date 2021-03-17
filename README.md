@@ -27,7 +27,13 @@ static {
 ```
 Take a look at readPropertiesToContainer(), it will first read lines in application.properties, and put the key-value pair into a Map<String, String> one after another in [CoreContext.java](src/main/java/tw/framework/michaelcore/ioc/CoreContext.java).
 
-[Note] CoreContext is a container that store all the data relevant to the framework, such as properties, classes, and objects.
+[Note] CoreContext is a container that store all the data relevant to the framework, such as properties, classes, and objects. Below are the fields inside CoreContext.
+```
+private static Map<String, String> properties = new HashMap<>();
+private static List<Class<?>> classes;
+private Map<String, Object> beanFactory = new HashMap<>();
+private Map<String, Object> realBeanFactory = new HashMap<>();
+```
 
 Next, scanClassesToContainer(isJUnitTest()), it takes a boolean parameter which indicate that the execution of the application is an unit test or not, if you run the application from the main function then the parameter will be false, but if you run the application as junit test then you will find that it's true.
 ```
@@ -63,9 +69,30 @@ public static CoreContext start() {
 ```
 Above is the execution flow of the initialization, note that the sequence of these steps is very important and cannot be mess up!
 
-That kick off by create a new CoreContext. Actually, it put itself (the CoreContext object) into one of it's object map while constructing the object. We will talk about the other object map util the AOP initialization.
+That kick off by create a new CoreContext. Actually, it put itself (the CoreContext object) into one of it's object map during construction. We will talk about the other object map util the AOP initialization when we need to create some proxy objects.
 ```
 public CoreContext() {
     beanFactory.put(this.getClass().getName(), this);
 }
+```
+Next, initializeIoC(coreContext), the code is down below.
+```
+private static void initializeIoC(CoreContext coreContext) throws Exception {
+    for (Class<?> clazz : CoreContext.getClasses()) {
+        if (Components.isComponentClass(clazz)) {
+            processIoC(coreContext, clazz);
+        }
+    }
+}
+```
+It will iterate the classes get from CoreContext and check if the current class has these annotation presented. These annotations are all located in [here](src/main/java/tw/framework/michaelcore/ioc/annotation/components).
+```
+COMPONENT(Component.class),
+CONFIGURATION(Configuration.class),
+CONTROLLER(Controller.class),
+RESTCONTROLLER(RestController.class),
+SERVICE(Service.class),
+REPOSITORY(Repository.class),
+ORMREPOSITORY(OrmRepository.class),
+AOPHANDLER(AopHandler.class);
 ```
