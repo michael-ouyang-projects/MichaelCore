@@ -61,7 +61,11 @@ public static CoreContext start() {
     return coreContext;
 }
 ```
-Above is the execution flow of the initialization, note that the sequence of these steps is very important and cannot be mess up! It will be divided into four block for detail explanation.
+Above is the execution flow of the initialization, note that the sequence of these steps is very important and cannot be mess up!
 
----
-### IoC
+That kick off by create a new CoreContext. Actually, it put itself (the CoreContext object) into one of it's object map while constructing the object. We will talk about the other object map util the AOP initialization.
+```
+public CoreContext() {
+    beanFactory.put(this.getClass().getName(), this);
+}
+```
