@@ -30,4 +30,4 @@ Take a look at readPropertiesToContainer(), it will first read lines in applicat
 
 Next, scanClassesToContainer(isJUnitTest()), it takes a boolean parameter which indicate that the execution of the application is an unit test or not, if you run the application from the main function then the parameter will be false, but if you run the application as junit test then you will find that it's true.
 
-When we pass true to the scanClassesToContainer(), framework will only scan classes in the target\classes directory; otherwise, it will scan classes both in target\classes and target\test-classes for the testing purpose.
+When we pass true to the scanClassesToContainer(), framework will only scan classes in the "target/classes" directory; otherwise, it will scan classes both in "target/classes" and "target/test-classes" for the testing purpose.
