@@ -1,7 +1,8 @@
 # MichaelCore
 
 ### This is a tutorial focus on how to develop your own Java Framework. So far, it include Embedded Web Server, IOC, AOP, MVC, Transactional Management, Asynchronous Processing, etc. (ORM and Mocking features are still under construction)
-
+---
+### Init
 First of all, the Entrypoint!<br/>
 Invoke Core.start() method in the main function, it will trigger the framework to do all the infrastructural stuff.
 ```
