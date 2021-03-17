@@ -1,9 +1,9 @@
 # MichaelCore
 
-### This is a tutorial focus on how to develop your own Java Framework. So far, it include IOC, AOP, MVC, Transcatinal Management, Async, etc.
+### This is a tutorial focus on how to develop your own Java Framework. So far, it include IOC, AOP, MVC, Transactional Management, Asynchronous Execution, etc. (ORM and Mocking features are still under construction)
 
-First of all, the entrypoint!<br/>
-User will call Core.start() method in the main function of the application.
+First of all, the Entrypoint!<br/>
+Invoke Core.start() method in the main function, it will trigger the framework to do all the infrastructural stuff.
 ```
 public class DemoApplication {
     public static void main(String[] args) throws Exception {
