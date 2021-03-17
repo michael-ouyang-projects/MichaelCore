@@ -23,6 +23,6 @@ static {
     }
 }
 ```
-Take a look at readPropertiesToContainer(), it will first read lines in application.properties, and put the key-value pair into a HashMap in [CoreContext.java](src/main/java/tw/framework/michaelcore/ioc/CoreContext.java) one after another.
+Take a look at readPropertiesToContainer(), it will first read lines in application.properties, and put the key-value pair into a HashMap one after another in [CoreContext.java](src/main/java/tw/framework/michaelcore/ioc/CoreContext.java).
 
 Note: CoreContext is a container that store all the data relevant to the framework, such as properties, classes, and objects.
