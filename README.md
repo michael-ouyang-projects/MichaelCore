@@ -35,7 +35,7 @@ private Map<String, Object> beanFactory = new HashMap<>();
 private Map<String, Object> realBeanFactory = new HashMap<>();
 ```
 
-Next, scanClassesToContainer(isJUnitTest()), it takes a boolean parameter which indicate that the execution of the application is an unit test or not, if you run the application from the main function then the parameter will be false, but if you run the application as junit test then you will find that it's true.
+Next, scanClassesToContainer(isJUnitTest()), it takes a boolean parameter which indicate that the execution of the application is an unit test or not, if you run the application from main function then the parameter will be false, but if you run the application as junit test then you will find that it's true.
 ```
 private static boolean isJUnitTest() {
     for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
@@ -46,7 +46,7 @@ private static boolean isJUnitTest() {
     return false;
 }
 ```
-When we pass true to the method, framework will only scan classes in the "target/classes" directory; otherwise, it will scan classes both in "target/classes" and "target/test-classes" for testing purpose. After finishing scanning task, the method will then put these classes into a List<Class<?>> in [CoreContext.java](src/main/java/tw/framework/michaelcore/ioc/CoreContext.java).
+When we pass false to the method, framework will only scan classes in the "target/classes" directory; otherwise, it will scan classes both in "target/classes" and "target/test-classes" for testing purpose. After finishing scanning task, the method will then put these classes into a List<Class<?>> in [CoreContext.java](src/main/java/tw/framework/michaelcore/ioc/CoreContext.java).
 
 It's the end of the initial static block, leading us back to the Entrypoint => Core.start()
 ```
