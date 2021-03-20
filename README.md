@@ -85,14 +85,14 @@ private static void initializeIoC(CoreContext coreContext) throws Exception {
     }
 }
 ```
-It will iterate the classes get from CoreContext and check if the current class has these annotation presented. These annotations are all located in [here](src/main/java/tw/framework/michaelcore/ioc/annotation/components).
+It will iterate the classes get from CoreContext and check if the current class has below annotation presented. These annotations are all located in [here](src/main/java/tw/framework/michaelcore/ioc/annotation/components).
 ```
-COMPONENT(Component.class),
-CONFIGURATION(Configuration.class),
-CONTROLLER(Controller.class),
-RESTCONTROLLER(RestController.class),
-SERVICE(Service.class),
-REPOSITORY(Repository.class),
-ORMREPOSITORY(OrmRepository.class),
-AOPHANDLER(AopHandler.class);
+COMPONENT(Component.class)
+CONFIGURATION(Configuration.class)
+CONTROLLER(Controller.class)
+RESTCONTROLLER(RestController.class)
+SERVICE(Service.class)
+REPOSITORY(Repository.class)
+ORMREPOSITORY(OrmRepository.class)
+AOPHANDLER(AopHandler.class)
 ```
