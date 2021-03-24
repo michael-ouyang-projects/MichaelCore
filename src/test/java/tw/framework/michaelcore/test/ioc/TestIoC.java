@@ -1,20 +1,26 @@
 package tw.framework.michaelcore.test.ioc;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.components.Configuration;
 import tw.framework.michaelcore.ioc.enumeration.BeanScope;
+import tw.framework.michaelcore.test.utils.MichaelcoreExtension;
 
 @Configuration
+@ExtendWith(MichaelcoreExtension.class)
 public class TestIoC {
 
     private static CoreContext coreContext;
+
+    @BeforeAll
+    public static void beforeAll() {
+        coreContext = MichaelcoreExtension.getCoreContext();
+    }
 
     @Bean("hello")
     public String helloString() {
@@ -29,16 +35,6 @@ public class TestIoC {
     @Bean(value = "prototypeBean", scope = BeanScope.PROTOTYPE)
     public TestBean prototypeBean() {
         return new TestBean();
-    }
-
-    @BeforeAll
-    public static void beforeAll() {
-        coreContext = Core.start();
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        Core.stop(coreContext);
     }
 
     @Test

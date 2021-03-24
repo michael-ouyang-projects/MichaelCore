@@ -15,16 +15,16 @@ import tw.framework.michaelcore.ioc.annotation.components.Configuration;
 @Configuration
 public class DataCore {
 
-    @Value
+    @Value("db.url")
     private String url;
 
-    @Value
+    @Value("db.userName")
     private String userName;
 
-    @Value
+    @Value("db.password")
     private String password;
 
-    @Value
+    @Value("db.driverClassName")
     private String driverClassName;
 
     @Autowired

@@ -30,7 +30,7 @@ public class RequestProcessor {
     @Autowired
     private Gson gson;
 
-    @Value
+    @Value("web.loggingPage")
     private String loggingPage;
 
     @Autowired

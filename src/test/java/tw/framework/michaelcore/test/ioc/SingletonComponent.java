@@ -7,7 +7,7 @@ import tw.framework.michaelcore.ioc.annotation.components.Component;
 @Component(value = "singletonComponent")
 public class SingletonComponent {
 
-    @Value
+    @Value("test")
     private String test;
 
     @Autowired

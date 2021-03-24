@@ -1,25 +1,19 @@
 package tw.framework.michaelcore.test.play;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import tw.framework.michaelcore.ioc.Core;
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.test.utils.MichaelcoreExtension;
 
+@ExtendWith(MichaelcoreExtension.class)
 public class TestPlay {
 
-    private static CoreContext coreContext;
-
-    @BeforeAll
-    public static void beforeAll() {
-        coreContext = Core.start();
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        Core.stop(coreContext);
-    }
+    // private static CoreContext coreContext;
+    //
+    // @BeforeAll
+    // public static void beforeAll() {
+    // coreContext = MichaelcoreExtension.getCoreContext();
+    // }
 
     @Test
     public void testing() {

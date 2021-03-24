@@ -142,7 +142,7 @@ public class JdbcTemplate {
     }
 
     private <T> T createObjectFromResultSet(Class<T> clazz, ResultSet resultSet) throws Exception {
-        T object = clazz.newInstance();
+        T object = clazz.getDeclaredConstructor().newInstance();
         for (Field field : clazz.getDeclaredFields()) {
             field.setAccessible(true);
             if (String.class.equals(field.getType())) {

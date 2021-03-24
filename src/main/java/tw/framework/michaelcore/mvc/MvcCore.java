@@ -20,7 +20,7 @@ import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
-import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextClose;
+import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextDestroy;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.components.Configuration;
 import tw.framework.michaelcore.ioc.annotation.components.Controller;
@@ -33,13 +33,13 @@ import tw.framework.michaelcore.mvc.annotation.Put;
 @Configuration
 public class MvcCore {
 
-    @Value
-    private String listeningPort;
+    @Value("server.port")
+    private String port;
 
-    @Value
+    @Value("web.welcomePage")
     private String welcomePage;
 
-    @Value
+    @Value("web.loggingPage")
     private String loggingPage;
 
     @Autowired
@@ -54,7 +54,7 @@ public class MvcCore {
         return new Gson();
     }
 
-    @ExecuteBeforeContextClose
+    @ExecuteBeforeContextDestroy
     public void clean() {
         try {
             isSocketClosed = true;
@@ -69,7 +69,7 @@ public class MvcCore {
         ExecutorService executor = Executors.newCachedThreadPool();
         executor.submit(() -> {
             try {
-                serverSocket = new ServerSocket(Integer.parseInt(listeningPort));
+                serverSocket = new ServerSocket(Integer.parseInt(port));
                 while (true) {
                     executor.submit(new RequestTask(serverSocket.accept(), requestProcessor));
                 }

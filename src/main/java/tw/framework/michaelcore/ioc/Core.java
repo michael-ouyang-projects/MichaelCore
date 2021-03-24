@@ -14,6 +14,7 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
 import net.sf.cglib.proxy.Enhancer;
+import net.sf.cglib.proxy.InvocationHandler;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.async.annotation.Async;
@@ -22,7 +23,7 @@ import tw.framework.michaelcore.data.orm.OrmAopHandler;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
-import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextClose;
+import tw.framework.michaelcore.ioc.annotation.ExecuteBeforeContextDestroy;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.components.Component;
 import tw.framework.michaelcore.ioc.annotation.components.Configuration;
@@ -114,7 +115,7 @@ public class Core {
             executeStartupCode(coreContext);
             System.out.println("== MichaelCore Started Successfully ==");
         } catch (Exception e) {
-            System.err.println("!! MichaelCore Started Error !!");
+            System.err.println("!! MichaelCore Failed To Start !!");
             e.printStackTrace();
         }
         return coreContext;
@@ -149,16 +150,16 @@ public class Core {
     private static void initializeProperties(CoreContext coreContext) throws Exception {
         for (Object bean : coreContext.getBeanFactory().values()) {
             if (!bean.getClass().equals(Constructor.class)) {
-                insertPropertiesToBean(bean, bean.getClass());
+                insertPropertiesToBean(bean);
             }
         }
     }
 
-    static void insertPropertiesToBean(Object bean, Class<?> clazz) throws Exception {
-        for (Field field : clazz.getDeclaredFields()) {
+    static void insertPropertiesToBean(Object bean) throws Exception {
+        for (Field field : bean.getClass().getDeclaredFields()) {
             if (field.isAnnotationPresent(Value.class)) {
                 field.setAccessible(true);
-                field.set(bean, CoreContext.getProperty(field.getName()));
+                field.set(bean, CoreContext.getProperty(field.getAnnotation(Value.class).value()));
             }
         }
     }
@@ -184,16 +185,12 @@ public class Core {
 
     private static void processBeanMethod(CoreContext coreContext, Method method, Object configurationBean) throws Exception {
         Bean bean = method.getAnnotation(Bean.class);
-        String beanName = getBeanName(bean, method);
+        String beanName = "".equals(bean.value()) ? method.getReturnType().getName() : bean.value();
         if (bean.scope().equals(BeanScope.SINGLETON)) {
             coreContext.addBean(beanName, method.invoke(configurationBean));
         } else if (bean.scope().equals(BeanScope.PROTOTYPE)) {
             coreContext.addBean(beanName, method);
         }
-    }
-
-    private static String getBeanName(Bean bean, Method method) {
-        return "".equals(bean.value()) ? method.getReturnType().getName() : bean.value();
     }
 
     private static void initializeAOP(CoreContext coreContext) throws Exception {
@@ -204,9 +201,9 @@ public class Core {
                 Enhancer enhancer = new Enhancer();
                 enhancer.setSuperclass(bean.getClass());
                 if (bean.getClass().isAnnotationPresent(OrmRepository.class)) {
-                    enhancer.setCallback((OrmAopHandler) coreContext.getBean(OrmAopHandler.class.getName()));
+                    enhancer.setCallback((InvocationHandler) coreContext.getBean(OrmAopHandler.class.getName()));
                 } else {
-                    enhancer.setCallback((MichaelCoreAopHandler) coreContext.getBean(MichaelCoreAopHandler.class.getName()));
+                    enhancer.setCallback((InvocationHandler) coreContext.getBean(MichaelCoreAopHandler.class.getName()));
                 }
                 tmpBeanFactory.put(entry.getKey(), enhancer.create());
             }
@@ -263,16 +260,16 @@ public class Core {
         if (autowiredClazz.equals(Object.class)) {
             String autowiredName = field.getAnnotation(Autowired.class).name();
             if ("".equals(autowiredName)) {
-                field.set(realBean, getBean(coreContext, field.getType()));
+                field.set(realBean, getBeanByType(coreContext, field.getType()));
             } else {
                 field.set(realBean, coreContext.getBean(autowiredName));
             }
         } else {
-            field.set(realBean, getBean(coreContext, autowiredClazz));
+            field.set(realBean, getBeanByType(coreContext, autowiredClazz));
         }
     }
 
-    private static Object getBean(CoreContext coreContext, Class<?> clazz) {
+    private static Object getBeanByType(CoreContext coreContext, Class<?> clazz) {
         if (Components.isComponentClass(clazz)) {
             String beanName = clazz.getName();
             if (clazz.isAnnotationPresent(Component.class)) {
@@ -289,7 +286,7 @@ public class Core {
             Object bean = entry.getValue();
             if (bean.getClass().equals(clazz) || (bean.getClass().equals(Method.class) && ((Method) bean).getReturnType().equals(clazz))) {
                 if (returningBean != null) {
-                    throw new RuntimeException("More than one bean with type: " + clazz.getName());
+                    throw new RuntimeException(String.format("More than one bean with type: %s, please specify bean name during autowire.", clazz.getName()));
                 }
                 returningBean = coreContext.getBean(entry.getKey());
             }
@@ -300,13 +297,13 @@ public class Core {
     private static void executeStartupCode(CoreContext coreContext) throws Exception {
         for (Object bean : coreContext.getBeanFactory().values()) {
             if (bean.getClass().isAnnotationPresent(Configuration.class)) {
-                MultiValueTreeMap<Integer, Method> map = collectExecuteAfterContextCreateMethodsByAnnotation(bean);
+                MultiValueTreeMap<Integer, Method> map = collectExecuteAfterContextCreateMethods(bean);
                 executeMethodsByOrder(map, bean);
             }
         }
     }
 
-    private static MultiValueTreeMap<Integer, Method> collectExecuteAfterContextCreateMethodsByAnnotation(Object configurationBean) throws Exception {
+    private static MultiValueTreeMap<Integer, Method> collectExecuteAfterContextCreateMethods(Object configurationBean) throws Exception {
         MultiValueTreeMap<Integer, Method> map = null;
         for (Method method : configurationBean.getClass().getMethods()) {
             if (method.isAnnotationPresent(ExecuteAfterContextCreate.class)) {
@@ -333,7 +330,7 @@ public class Core {
             coreContext.clearBeanFactory();
             System.out.println("== MichaelCore Stopped Successfully ==");
         } catch (Exception e) {
-            System.out.println("!! MichaelCore Stopped Error !!");
+            System.out.println("!! MichaelCore Failed To Stop !!");
             e.printStackTrace();
         }
     }
@@ -341,20 +338,20 @@ public class Core {
     static void executeShutdownCode(CoreContext coreContext) throws Exception {
         for (Object bean : coreContext.getBeanFactory().values()) {
             if (bean.getClass().isAnnotationPresent(Configuration.class)) {
-                MultiValueTreeMap<Integer, Method> map = collectExecuteBeforeContextCloseMethodsByAnnotation(bean);
+                MultiValueTreeMap<Integer, Method> map = collectExecuteBeforeContextDestroyMethods(bean);
                 executeMethodsByOrder(map, bean);
             }
         }
     }
 
-    private static MultiValueTreeMap<Integer, Method> collectExecuteBeforeContextCloseMethodsByAnnotation(Object configurationBean) throws Exception {
+    private static MultiValueTreeMap<Integer, Method> collectExecuteBeforeContextDestroyMethods(Object configurationBean) throws Exception {
         MultiValueTreeMap<Integer, Method> map = null;
         for (Method method : configurationBean.getClass().getMethods()) {
-            if (method.isAnnotationPresent(ExecuteBeforeContextClose.class)) {
+            if (method.isAnnotationPresent(ExecuteBeforeContextDestroy.class)) {
                 if (map == null) {
                     map = new MultiValueTreeMap<>();
                 }
-                map.put(method.getAnnotation(ExecuteBeforeContextClose.class).order(), method);
+                map.put(method.getAnnotation(ExecuteBeforeContextDestroy.class).order(), method);
             }
         }
         return map;

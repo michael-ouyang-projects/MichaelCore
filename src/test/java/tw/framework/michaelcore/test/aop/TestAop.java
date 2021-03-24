@@ -4,15 +4,16 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import tw.framework.michaelcore.ioc.Core;
 import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.test.utils.MichaelcoreExtension;
 
+@ExtendWith(MichaelcoreExtension.class)
 public class TestAop {
 
     private static CoreContext coreContext;
@@ -21,13 +22,8 @@ public class TestAop {
 
     @BeforeAll
     public static void beforeAll() {
-        coreContext = Core.start();
+        coreContext = MichaelcoreExtension.getCoreContext();
         System.setOut(new PrintStream(outputStream));
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        Core.stop(coreContext);
     }
 
     @BeforeEach

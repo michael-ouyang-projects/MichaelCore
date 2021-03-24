@@ -8,8 +8,6 @@ import java.util.Stack;
 
 import org.apache.commons.dbcp2.BasicDataSource;
 
-import tw.framework.michaelcore.aop.annotation.After;
-import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.data.enumeration.TransactionalPropagation;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
@@ -23,8 +21,7 @@ public class TransactionalAopHandler {
     private static ThreadLocal<Savepoint> currentSavepoint = new ThreadLocal<>();
     private static ThreadLocal<Stack<TransactionalData>> transactionalDataStack = new ThreadLocal<>();
 
-    @Before
-    public void beforeTransactionalMethod() {
+    public void before() {
         TransactionalData transactionalData = transactionalDataStack.get().peek();
         try {
             if (needToCreateNewTransaction(transactionalData)) {
@@ -50,8 +47,7 @@ public class TransactionalAopHandler {
         currentConnection.set(connection);
     }
 
-    @After
-    public void afterTransactionalMethod() {
+    public void after() {
         TransactionalData transactionalData = transactionalDataStack.get().pop();
         if (transactionalData.getConnection() != null) {
             processCommitOrRollback(transactionalData);

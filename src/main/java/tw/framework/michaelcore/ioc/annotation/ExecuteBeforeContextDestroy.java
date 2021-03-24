@@ -1,15 +1,15 @@
 package tw.framework.michaelcore.ioc.annotation;
 
-import static java.lang.annotation.ElementType.FIELD;
+import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 
 @Retention(RUNTIME)
-@Target(FIELD)
-public @interface Value {
+@Target(METHOD)
+public @interface ExecuteBeforeContextDestroy {
 
-    public String value();
+    public int order() default 1;
 
 }

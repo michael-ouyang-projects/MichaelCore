@@ -1,13 +1,10 @@
 package tw.framework.michaelcore.async;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import tw.framework.michaelcore.aop.annotation.After;
-import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
@@ -24,14 +21,15 @@ public class AsyncAopHandler {
         return CompletableFuture.supplyAsync(() -> {
             Object returningObject = null;
             try {
-                executeMethodsWithSpecifiedAnnotation(aopHandlers, Before.class);
+                executeHandlersSpecificMethod("before", aopHandlers, args);
                 returningObject = method.invoke(coreContext.getRealBean(proxy), args);
                 if (returningObject != null) {
                     returningObject = ((CompletableFuture<Object>) returningObject).get();
                 }
                 Collections.reverse(aopHandlers);
-                executeMethodsWithSpecifiedAnnotation(aopHandlers, After.class);
+                executeHandlersSpecificMethod("after", aopHandlers, returningObject);
             } catch (Throwable throwable) {
+                throwable.printStackTrace();
                 if (needToRollback(throwable.getCause())) {
                     TransactionalAopHandler.setRollback();
                 }
@@ -40,11 +38,15 @@ public class AsyncAopHandler {
         });
     }
 
-    private void executeMethodsWithSpecifiedAnnotation(List<Object> aopHandlers, Class<? extends Annotation> annotation) throws Exception {
+    private void executeHandlersSpecificMethod(String specificMethod, List<Object> aopHandlers, Object... args) throws Exception {
         for (Object handler : aopHandlers) {
             for (Method method : handler.getClass().getMethods()) {
-                if (method.isAnnotationPresent(annotation)) {
-                    method.invoke(handler);
+                if (specificMethod.equals(method.getName())) {
+                    if (method.getParameterCount() == 0) {
+                        method.invoke(handler);
+                    } else {
+                        method.invoke(handler, args);
+                    }
                 }
             }
         }

@@ -8,7 +8,7 @@ import tw.framework.michaelcore.ioc.enumeration.BeanScope;
 @Component(value = "prototypeComponent", scope = BeanScope.PROTOTYPE)
 public class PrototypeComponent {
 
-    @Value
+    @Value("test")
     private String test;
 
     @Autowired(name = "singletonBean")

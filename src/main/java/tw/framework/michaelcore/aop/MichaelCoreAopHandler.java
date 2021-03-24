@@ -6,9 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import net.sf.cglib.proxy.InvocationHandler;
-import tw.framework.michaelcore.aop.annotation.After;
 import tw.framework.michaelcore.aop.annotation.AopHere;
-import tw.framework.michaelcore.aop.annotation.Before;
 import tw.framework.michaelcore.async.AsyncAopHandler;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
@@ -26,18 +24,18 @@ public class MichaelCoreAopHandler implements InvocationHandler {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
-        Class<?> clazz = method.getDeclaringClass();
         List<Object> aopHandlers = new ArrayList<>();
-        processTransactional(clazz, method, aopHandlers);
-        processAopHere(clazz, method, aopHandlers);
+        Class<?> clazz = method.getDeclaringClass();
+        processTransactional(method, clazz, aopHandlers);
+        processAopHere(method, clazz, aopHandlers);
 
-        if (asyncOnClassOrMethod(clazz, method)) {
+        if (method.isAnnotationPresent(Async.class) || clazz.isAnnotationPresent(Async.class)) {
             return ((AsyncAopHandler) coreContext.getBean(AsyncAopHandler.class.getName())).invokeAsync(proxy, method, args, aopHandlers);
         }
         return invokeSync(proxy, method, args, aopHandlers);
     }
 
-    private void processTransactional(Class<?> clazz, Method method, List<Object> aopHandlers) {
+    private void processTransactional(Method method, Class<?> clazz, List<Object> aopHandlers) {
         if (method.isAnnotationPresent(Transactional.class)) {
             addTransactionDataAndHandler(method.getAnnotation(Transactional.class), aopHandlers);
         } else if (clazz.isAnnotationPresent(Transactional.class)) {
@@ -51,7 +49,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         aopHandlers.add(transactionalAopHandler);
     }
 
-    private void processAopHere(Class<?> clazz, Method method, List<Object> aopHandlers) {
+    private void processAopHere(Method method, Class<?> clazz, List<Object> aopHandlers) {
         if (clazz.isAnnotationPresent(AopHere.class)) {
             aopHandlers.add(coreContext.getBean(clazz.getAnnotation(AopHere.class).value().getName()));
         }
@@ -60,12 +58,8 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         }
     }
 
-    private boolean asyncOnClassOrMethod(Class<?> clazz, Method method) {
-        return clazz.isAnnotationPresent(Async.class) || method.isAnnotationPresent(Async.class);
-    }
-
     private Object invokeSync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
-        executeBeforeMethods(aopHandlers, args);
+        executeHandlersSpecificMethod("before", aopHandlers, args);
         Object returningObject = null;
         try {
             returningObject = method.invoke(coreContext.getRealBean(proxy), args);
@@ -76,32 +70,18 @@ public class MichaelCoreAopHandler implements InvocationHandler {
             }
         }
         Collections.reverse(aopHandlers);
-        executeAfterMethods(aopHandlers, returningObject);
+        executeHandlersSpecificMethod("after", aopHandlers, returningObject);
         return returningObject;
     }
 
-    private void executeBeforeMethods(List<Object> aopHandlers, Object[] args) throws Exception {
+    private void executeHandlersSpecificMethod(String specificMethod, List<Object> aopHandlers, Object... args) throws Exception {
         for (Object handler : aopHandlers) {
             for (Method method : handler.getClass().getMethods()) {
-                if (method.isAnnotationPresent(Before.class)) {
+                if (specificMethod.equals(method.getName())) {
                     if (method.getParameterCount() == 0) {
                         method.invoke(handler);
                     } else {
                         method.invoke(handler, args);
-                    }
-                }
-            }
-        }
-    }
-
-    private void executeAfterMethods(List<Object> aopHandlers, Object arg) throws Exception {
-        for (Object handler : aopHandlers) {
-            for (Method method : handler.getClass().getMethods()) {
-                if (method.isAnnotationPresent(After.class)) {
-                    if (method.getParameterCount() == 0) {
-                        method.invoke(handler);
-                    } else {
-                        method.invoke(handler, arg);
                     }
                 }
             }
