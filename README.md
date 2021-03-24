@@ -61,7 +61,7 @@ public static CoreContext start() {
         executeStartupCode(coreContext);
         System.out.println("== MichaelCore Started Successfully ==");
     } catch (Exception e) {
-        System.err.println("!! MichaelCore Started Error !!");
+        System.err.println("!! MichaelCore Started With Error !!");
         e.printStackTrace();
     }
     return coreContext;
