@@ -92,7 +92,7 @@ public class TransactionalAopHandler {
         }
     }
 
-    public void addNewTransactionData(TransactionalData transactionData) {
+    public void attachNewTransactionDataToThread(TransactionalData transactionData) {
         if (transactionalDataStack.get() == null) {
             transactionalDataStack.set(new Stack<>());
         }

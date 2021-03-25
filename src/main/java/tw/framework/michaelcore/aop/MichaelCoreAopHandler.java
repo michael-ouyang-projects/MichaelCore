@@ -12,9 +12,12 @@ import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.TransactionalAopHandler;
 import tw.framework.michaelcore.data.TransactionalData;
 import tw.framework.michaelcore.data.annotation.Transactional;
+import tw.framework.michaelcore.data.orm.OrmAopHandler;
+import tw.framework.michaelcore.data.orm.OrmData;
 import tw.framework.michaelcore.ioc.CoreContext;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
+import tw.framework.michaelcore.ioc.annotation.components.OrmRepository;
 
 @AopHandler
 public class MichaelCoreAopHandler implements InvocationHandler {
@@ -28,6 +31,7 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         Class<?> clazz = method.getDeclaringClass();
         processTransactional(method, clazz, aopHandlers);
         processAopHere(method, clazz, aopHandlers);
+        processOrm(proxy, method, aopHandlers);
 
         if (method.isAnnotationPresent(Async.class) || clazz.isAnnotationPresent(Async.class)) {
             return ((AsyncAopHandler) coreContext.getBean(AsyncAopHandler.class.getName())).invokeAsync(proxy, method, args, aopHandlers);
@@ -37,16 +41,18 @@ public class MichaelCoreAopHandler implements InvocationHandler {
 
     private void processTransactional(Method method, Class<?> clazz, List<Object> aopHandlers) {
         if (method.isAnnotationPresent(Transactional.class)) {
-            addTransactionDataAndHandler(method.getAnnotation(Transactional.class), aopHandlers);
+            TransactionalAopHandler transactionalAopHandler = attachTransactionDataToThread(method.getAnnotation(Transactional.class), aopHandlers);
+            aopHandlers.add(transactionalAopHandler);
         } else if (clazz.isAnnotationPresent(Transactional.class)) {
-            addTransactionDataAndHandler(clazz.getAnnotation(Transactional.class), aopHandlers);
+            TransactionalAopHandler transactionalAopHandler = attachTransactionDataToThread(clazz.getAnnotation(Transactional.class), aopHandlers);
+            aopHandlers.add(transactionalAopHandler);
         }
     }
 
-    private void addTransactionDataAndHandler(Transactional transactional, List<Object> aopHandlers) {
+    private TransactionalAopHandler attachTransactionDataToThread(Transactional transactional, List<Object> aopHandlers) {
         TransactionalAopHandler transactionalAopHandler = (TransactionalAopHandler) coreContext.getBean(TransactionalAopHandler.class.getName());
-        transactionalAopHandler.addNewTransactionData(new TransactionalData(transactional.propagation(), transactional.isolation(), transactional.rollbackFor()));
-        aopHandlers.add(transactionalAopHandler);
+        transactionalAopHandler.attachNewTransactionDataToThread(new TransactionalData(transactional.propagation(), transactional.isolation(), transactional.rollbackFor()));
+        return transactionalAopHandler;
     }
 
     private void processAopHere(Method method, Class<?> clazz, List<Object> aopHandlers) {
@@ -58,34 +64,48 @@ public class MichaelCoreAopHandler implements InvocationHandler {
         }
     }
 
+    private void processOrm(Object proxy, Method method, List<Object> aopHandlers) throws ClassNotFoundException {
+        Class<?> repositoryClazz = Class.forName(proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0]);
+        if (repositoryClazz.isAnnotationPresent(OrmRepository.class)) {
+            OrmAopHandler ormAopHandler = (OrmAopHandler) coreContext.getBean(OrmAopHandler.class.getName());
+            ormAopHandler.attachNewOrmDataToThread(new OrmData(method, repositoryClazz.getAnnotation(OrmRepository.class)));
+            aopHandlers.add(ormAopHandler);
+        }
+    }
+
     private Object invokeSync(Object proxy, Method method, Object[] args, List<Object> aopHandlers) throws Exception {
-        executeHandlersSpecificMethod("before", aopHandlers, args);
         Object returningObject = null;
         try {
+            executeHandlersSpecificMethod("before", aopHandlers, args);
             returningObject = method.invoke(coreContext.getRealBean(proxy), args);
+            Collections.reverse(aopHandlers);
+            Object handlerReturningObject = executeHandlersSpecificMethod("after", aopHandlers, returningObject);
+            if (handlerReturningObject != null) {
+                returningObject = handlerReturningObject;
+            }
         } catch (Throwable throwable) {
             throwable.printStackTrace();
             if (needToRollback(throwable.getCause())) {
                 TransactionalAopHandler.setRollback();
             }
         }
-        Collections.reverse(aopHandlers);
-        executeHandlersSpecificMethod("after", aopHandlers, returningObject);
         return returningObject;
     }
 
-    private void executeHandlersSpecificMethod(String specificMethod, List<Object> aopHandlers, Object... args) throws Exception {
+    private Object executeHandlersSpecificMethod(String specificMethod, List<Object> aopHandlers, Object... args) throws Exception {
+        Object handlerReturningObject = null;
         for (Object handler : aopHandlers) {
             for (Method method : handler.getClass().getMethods()) {
                 if (specificMethod.equals(method.getName())) {
                     if (method.getParameterCount() == 0) {
-                        method.invoke(handler);
+                        handlerReturningObject = method.invoke(handler);
                     } else {
-                        method.invoke(handler, args);
+                        handlerReturningObject = method.invoke(handler, args);
                     }
                 }
             }
         }
+        return handlerReturningObject;
     }
 
     private boolean needToRollback(Throwable throwable) {

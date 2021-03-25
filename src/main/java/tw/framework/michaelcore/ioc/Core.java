@@ -19,7 +19,6 @@ import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.aop.annotation.AopHere;
 import tw.framework.michaelcore.async.annotation.Async;
 import tw.framework.michaelcore.data.annotation.Transactional;
-import tw.framework.michaelcore.data.orm.OrmAopHandler;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
@@ -200,11 +199,7 @@ public class Core {
             if (needToCreateProxy(bean.getClass())) {
                 Enhancer enhancer = new Enhancer();
                 enhancer.setSuperclass(bean.getClass());
-                if (bean.getClass().isAnnotationPresent(OrmRepository.class)) {
-                    enhancer.setCallback((InvocationHandler) coreContext.getBean(OrmAopHandler.class.getName()));
-                } else {
-                    enhancer.setCallback((InvocationHandler) coreContext.getBean(MichaelCoreAopHandler.class.getName()));
-                }
+                enhancer.setCallback((InvocationHandler) coreContext.getBean(MichaelCoreAopHandler.class.getName()));
                 tmpBeanFactory.put(entry.getKey(), enhancer.create());
             }
         }

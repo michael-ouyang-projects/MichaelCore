@@ -10,6 +10,14 @@ public class UserForOrm {
     private String name;
     private Integer age;
 
+    public UserForOrm() {
+    }
+
+    public UserForOrm(String name, Integer age) {
+        this.name = name;
+        this.age = age;
+    }
+
     public String getName() {
         return name;
     }

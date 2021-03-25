@@ -21,7 +21,6 @@ public class MichaelcoreExtension implements BeforeAllCallback, ExtensionContext
 
     @Override
     public void close() throws Throwable {
-        System.out.println("test");
         Core.stop(coreContext);
     }
 
