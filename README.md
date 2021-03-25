@@ -96,3 +96,4 @@ REPOSITORY(Repository.class)
 ORMREPOSITORY(OrmRepository.class)
 AOPHANDLER(AopHandler.class)
 ```
+Test
