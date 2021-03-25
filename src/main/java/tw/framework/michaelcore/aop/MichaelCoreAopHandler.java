@@ -65,10 +65,10 @@ public class MichaelCoreAopHandler implements InvocationHandler {
     }
 
     private void processOrm(Object proxy, Method method, List<Object> aopHandlers) throws ClassNotFoundException {
-        Class<?> repositoryClazz = Class.forName(proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0]);
-        if (repositoryClazz.isAnnotationPresent(OrmRepository.class)) {
+        Class<?> ormRepositoryClazz = Class.forName(proxy.getClass().getName().split("\\$\\$EnhancerByCGLIB\\$\\$")[0]);
+        if (ormRepositoryClazz.isAnnotationPresent(OrmRepository.class)) {
             OrmAopHandler ormAopHandler = (OrmAopHandler) coreContext.getBean(OrmAopHandler.class.getName());
-            ormAopHandler.attachNewOrmDataToThread(new OrmData(method, repositoryClazz.getAnnotation(OrmRepository.class)));
+            ormAopHandler.attachNewOrmDataToThread(new OrmData(method, ormRepositoryClazz.getAnnotation(OrmRepository.class)));
             aopHandlers.add(ormAopHandler);
         }
     }
