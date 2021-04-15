@@ -1,6 +1,6 @@
 # MichaelCore
 
-### This is a tutorial focus on how to develop your own Java Framework. So far, it includes Embedded Web Server, IoC, AOP, MVC, Transactional Management, Asynchronous Processing, etc. (ORM and Mocking features are still under construction)
+### This is a tutorial focus on how to develop your own Java Framework. So far, it includes Embedded Web Server, IoC, AOP, MVC, Transactional Management, ORM, Asynchronous Processing, etc.
 
 ---
 ### Init
