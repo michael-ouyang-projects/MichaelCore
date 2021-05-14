@@ -35,19 +35,19 @@ public class Core {
 
     static {
         try {
-            readPropertiesToContainer();
+            readApplicationPropertiesToContainer();
             scanClassesToContainer(isJUnitTest());
         } catch (Exception e) {
-            System.err.println("Core Initial Error!");
+            System.err.println("!! Core Initial Error !!");
             e.printStackTrace();
         }
     }
 
-    private static void readPropertiesToContainer() throws IOException {
-        List<String> propertyStrings = Files.readAllLines(Paths.get("src/main/resources/application.properties"));
-        propertyStrings.forEach(propertyString -> {
-            if (propertyString.trim().length() > 0) {
-                String[] keyValue = propertyString.split("=");
+    private static void readApplicationPropertiesToContainer() throws IOException {
+        List<String> properties = Files.readAllLines(Paths.get("src/main/resources/application.properties"));
+        properties.forEach(property -> {
+            if (property.trim().length() > 0) {
+                String[] keyValue = property.split("=");
                 CoreContext.addProperty(keyValue[0], keyValue[1]);
             }
         });
@@ -63,38 +63,37 @@ public class Core {
     }
 
     private static void scanClassesToContainer(boolean isJUnitTest) throws IOException {
-        Path sourceCodeDirectoryPath = getSourceCodeDirectoryPath(isJUnitTest);
-        CoreContext.setClasses(Files.walk(sourceCodeDirectoryPath)
-                .filter(Core::isClassFile)
-                .map(classFilePath -> {
-                    return classFilePathToFqcn(classFilePath, sourceCodeDirectoryPath, isJUnitTest);
-                }).map(Core::getClassByFqcn).collect(Collectors.toList()));
+        Path sourceCodePath = getSourceCodePath(isJUnitTest);
+        CoreContext.setClasses(Files.walk(sourceCodePath)
+        		.filter(Core::isClassFile)
+                .map(classFile -> classFileToFqcn(classFile, sourceCodePath, isJUnitTest))
+                .map(Core::fqcnToClass).collect(Collectors.toList()));
     }
 
-    private static Path getSourceCodeDirectoryPath(boolean isJUnitTest) throws IOException {
+    private static Path getSourceCodePath(boolean isJUnitTest) throws IOException {
         /* /D:/eclipse-workspace-git/MichaelCore/target/classes/ */
-        String sourceCodeDirectoryPath = Core.class.getResource("/").getPath();
-        sourceCodeDirectoryPath = System.getProperty("os.name").contains("Windows") ? sourceCodeDirectoryPath.substring(1) : sourceCodeDirectoryPath;
+        String sourceCodePath = Core.class.getResource("/").getPath();
+        sourceCodePath = System.getProperty("os.name").contains("Windows") ? sourceCodePath.substring(1) : sourceCodePath;
         if (isJUnitTest) {
-            return Paths.get(sourceCodeDirectoryPath, "..").toRealPath();
+            return Paths.get(sourceCodePath, "..").toRealPath();
         }
-        return Paths.get(sourceCodeDirectoryPath);
+        return Paths.get(sourceCodePath);
     }
 
     private static boolean isClassFile(Path path) {
         return Files.isRegularFile(path) && path.getFileName().toString().endsWith(".class");
     }
 
-    private static String classFilePathToFqcn(Path classFilePath, Path sourceCodeDirectoryPath, boolean isJUnitTest) {
+    private static String classFileToFqcn(Path classFile, Path sourceCodePath, boolean isJUnitTest) {
         /* tw/framework/michaelcore/ioc/Core.class */
-        String portionClassPath = classFilePath.toString().replace("\\", "/").split(sourceCodeDirectoryPath.toString().replace("\\", "/"))[1].substring(1);
-        if (isJUnitTest) {
-            return portionClassPath.substring(portionClassPath.indexOf("/") + 1).split(".class")[0].replace("/", ".");
+    	String classPath = classFile.toString().replace("\\", "/").split(sourceCodePath.toString().replace("\\", "/"))[1].substring(1);
+    	if (isJUnitTest) {
+            return classPath.substring(classPath.indexOf("/") + 1).split(".class")[0].replace("/", ".");
         }
-        return portionClassPath.split(".class")[0].replace("/", ".");
+        return classPath.split(".class")[0].replace("/", ".");
     }
 
-    private static Class<?> getClassByFqcn(String fqcn) {
+    private static Class<?> fqcnToClass(String fqcn) {
         try {
             return Class.forName(fqcn);
         } catch (ClassNotFoundException e) {
