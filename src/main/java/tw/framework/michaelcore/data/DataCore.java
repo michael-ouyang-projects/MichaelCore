@@ -43,7 +43,7 @@ public class DataCore {
     @ExecuteAfterContextCreate(order = 1)
     public void initializeData() {
         StringBuilder command = new StringBuilder();
-        try (BufferedReader reader = new BufferedReader(new FileReader("resources/data.sql"))) {
+        try (BufferedReader reader = new BufferedReader(new FileReader("src/main/resources/data.sql"))) {
             while (reader.ready()) {
                 char data = (char) reader.read();
                 if (data == ';') {

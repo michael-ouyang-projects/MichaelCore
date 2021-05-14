@@ -132,7 +132,7 @@ public class MvcCore {
     }
 
     private void createNecessaryDirectories() throws IOException {
-        Path templatePath = Paths.get("resources/templates");
+        Path templatePath = Paths.get("src/main/resources/templates");
         if (directoryNotExist(templatePath)) {
             Files.createDirectories(templatePath);
         }

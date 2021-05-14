@@ -181,7 +181,7 @@ public class RequestProcessor {
 
     private byte[] readAndProcessTemplate(Model model) throws IOException {
         StringBuilder pageContent = new StringBuilder();
-        Files.readAllLines(Paths.get("resources", "templates", model.getTemplate())).forEach(line -> {
+        Files.readAllLines(Paths.get("src/main/resources/templates/", model.getTemplate())).forEach(line -> {
             if (line.contains("${")) {
                 String[] variables = line.split("\\$\\{");
                 for (int i = 1; i < variables.length; i++) {
@@ -217,7 +217,7 @@ public class RequestProcessor {
 
     private byte[] getStaticResource(Request request) throws IOException {
         setContentType(request);
-        return Files.readAllBytes(Paths.get("resources", request.getRequestPath()));
+        return Files.readAllBytes(Paths.get("src/main/resources/static/", request.getRequestPath()));
     }
 
     private void setContentType(Request request) throws IOException {

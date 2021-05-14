@@ -44,7 +44,7 @@ public class Core {
     }
 
     private static void readPropertiesToContainer() throws IOException {
-        List<String> propertyStrings = Files.readAllLines(Paths.get("resources/application.properties"));
+        List<String> propertyStrings = Files.readAllLines(Paths.get("src/main/resources/application.properties"));
         propertyStrings.forEach(propertyString -> {
             if (propertyString.trim().length() > 0) {
                 String[] keyValue = propertyString.split("=");
