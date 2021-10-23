@@ -23,9 +23,13 @@ public class CoreContext {
 		beanFactory.put(CoreContext.class.getName(), this);
 	}
 
-	static void addProperty(String key, String value) {
-		if (value != null) {
+	static void addProperty(String key, String value) throws Exception {
+		key = key.trim();
+		value = value.trim();
+		if (key.length() > 0 && value.length() > 0) {
 			properties.put(key, value);
+		} else {
+			throw new Exception("Invalid property format in application.properties: " + key + "=" + value);
 		}
 	}
 
