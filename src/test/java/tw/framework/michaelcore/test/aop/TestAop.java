@@ -10,13 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 import tw.framework.michaelcore.test.utils.MichaelcoreExtension;
 
 @ExtendWith(MichaelcoreExtension.class)
 public class TestAop {
 
-    private static CoreContext coreContext;
+    private static CoreContainer coreContext;
     private static ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
     private MyComponent component = coreContext.getBean("myComponent", MyComponent.class);
 

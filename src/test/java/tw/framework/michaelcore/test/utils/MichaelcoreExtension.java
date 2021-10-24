@@ -4,12 +4,12 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import tw.framework.michaelcore.ioc.Core;
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 
 public class MichaelcoreExtension implements BeforeAllCallback, ExtensionContext.Store.CloseableResource {
 
     private static boolean started;
-    private static CoreContext coreContext;
+    private static CoreContainer coreContext;
 
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
@@ -24,7 +24,7 @@ public class MichaelcoreExtension implements BeforeAllCallback, ExtensionContext
         Core.stop(coreContext);
     }
 
-    public static CoreContext getCoreContext() {
+    public static CoreContainer getCoreContext() {
         return coreContext;
     }
 

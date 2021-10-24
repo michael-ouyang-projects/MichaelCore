@@ -1,48 +1,45 @@
 package tw.framework.michaelcore.ioc;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 
 import net.sf.cglib.proxy.Enhancer;
 import net.sf.cglib.proxy.InvocationHandler;
 import tw.framework.michaelcore.aop.MichaelCoreAopHandler;
 import tw.framework.michaelcore.ioc.annotation.components.Component;
 
-public class CoreContext {
+public class CoreContainer {
 
-	private static Map<String, String> properties = new HashMap<>();
-	private static List<Class<?>> classes;
+	private static Properties properties = new Properties();
+	private static Set<Class<?>> componentClasses;
 
 	private Map<String, Object> beanFactory = new HashMap<>();
 	private Map<String, Object> realBeanFactory = new HashMap<>();
 
-	public CoreContext() {
-		beanFactory.put(CoreContext.class.getName(), this);
+	static void loadProperties(InputStream inputStream) throws IOException {
+		properties.load(inputStream);
 	}
 
-	static void addProperty(String key, String value) throws Exception {
-		key = key.trim();
-		value = value.trim();
-		if (key.length() > 0 && value.length() > 0) {
-			properties.put(key, value);
-		} else {
-			throw new Exception("Invalid property format in application.properties: " + key + "=" + value);
-		}
-	}
-
-	public static String getProperty(String key) {
+	public static Object getProperty(String key) {
 		return properties.get(key);
 	}
 
-	static void setClasses(List<Class<?>> classes) {
-		CoreContext.classes = classes;
+	static void setComponentClasses(Set<Class<?>> clazzes) {
+		componentClasses = clazzes;
 	}
 
-	public static List<Class<?>> getClasses() {
-		return classes;
+	public static Set<Class<?>> getComponentClasses() {
+		return componentClasses;
+	}
+
+	public CoreContainer() {
+		beanFactory.put(CoreContainer.class.getName(), this);
 	}
 
 	public void addBean(String name, Object object) {

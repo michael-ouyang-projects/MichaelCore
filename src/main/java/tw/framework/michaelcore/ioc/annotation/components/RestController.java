@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 @Target(TYPE)
 public @interface RestController {
 
+	public boolean isComponent() default true;
+
 }

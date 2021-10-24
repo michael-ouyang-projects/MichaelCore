@@ -16,7 +16,7 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Value;
 import tw.framework.michaelcore.ioc.annotation.components.Component;
@@ -34,7 +34,7 @@ public class RequestProcessor {
     private String loggingPage;
 
     @Autowired
-    private CoreContext coreContext;
+    private CoreContainer coreContext;
 
     public Request getRequest(InputStream inputStream) throws IOException {
         Request request = null;

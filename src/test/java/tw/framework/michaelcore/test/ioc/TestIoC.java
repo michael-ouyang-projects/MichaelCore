@@ -7,7 +7,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.components.Configuration;
@@ -20,7 +20,7 @@ import tw.framework.michaelcore.test.utils.MichaelcoreExtension;
 public class TestIoC {
 
     @Autowired
-    private CoreContext coreContext;
+    private CoreContainer coreContext;
 
     @BeforeAll
     public void beforeAll() {

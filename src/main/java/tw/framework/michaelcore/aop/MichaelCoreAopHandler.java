@@ -14,7 +14,7 @@ import tw.framework.michaelcore.data.TransactionalData;
 import tw.framework.michaelcore.data.annotation.Transactional;
 import tw.framework.michaelcore.data.orm.OrmAopHandler;
 import tw.framework.michaelcore.data.orm.OrmData;
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.components.AopHandler;
 import tw.framework.michaelcore.ioc.annotation.components.OrmRepository;
@@ -23,7 +23,7 @@ import tw.framework.michaelcore.ioc.annotation.components.OrmRepository;
 public class MichaelCoreAopHandler implements InvocationHandler {
 
     @Autowired
-    private CoreContext coreContext;
+    private CoreContainer coreContext;
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {

@@ -16,7 +16,7 @@ import java.util.concurrent.Executors;
 
 import com.google.gson.Gson;
 
-import tw.framework.michaelcore.ioc.CoreContext;
+import tw.framework.michaelcore.ioc.CoreContainer;
 import tw.framework.michaelcore.ioc.annotation.Autowired;
 import tw.framework.michaelcore.ioc.annotation.Bean;
 import tw.framework.michaelcore.ioc.annotation.ExecuteAfterContextCreate;
@@ -97,7 +97,7 @@ public class MvcCore {
 
     private void initializeRequestMapping() throws Exception {
         requestMapping = createRequestMapping();
-        for (Class<?> clazz : CoreContext.getClasses()) {
+        for (Class<?> clazz : CoreContainer.getComponentClasses()) {
             if (isControllerOrRestController(clazz)) {
                 mapUrlToMethod(clazz);
             }
